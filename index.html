@@ -690,12 +690,6 @@ let supabase = null, currentUser = null;
 try {
   if (window.supabase && window.supabase.createClient) {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && !currentUser) {
-        currentUser = session.user;
-        await loadOrCreateProfile(currentUser);
-      }
-    });
   }
 } catch(e) { console.warn('Supabase init failed', e); }
 
@@ -741,48 +735,58 @@ function showSignup() { document.getElementById('panel-signin').style.display='n
 function showForgot() { document.getElementById('panel-signin').style.display='none'; document.getElementById('panel-forgot').style.display='block'; }
 
 async function signIn() {
-  const email=document.getElementById('signin-email').value.trim(), pass=document.getElementById('signin-password').value;
-  const err=document.getElementById('signin-error'), btn=document.getElementById('signin-btn');
+  const email = document.getElementById('signin-email').value.trim();
+  const pass  = document.getElementById('signin-password').value;
+  const err   = document.getElementById('signin-error');
+  const btn   = document.getElementById('signin-btn');
   err.classList.remove('show');
-  if (!email||!pass){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
-  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  if (!supabase){await delay(600);btn.innerHTML='Sign in';btn.disabled=false;onAuthSuccess({id:'demo',email});return;}
+  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+  if (!supabase) { await delay(600); btn.innerHTML = 'Sign in'; btn.disabled = false; enterAfterAuth(null); return; }
   try {
-    const{data,error}=await supabase.auth.signInWithPassword({email,password:pass});
-    if(error) throw error;
-    currentUser=data.user;
-    btn.innerHTML='Sign in';btn.disabled=false;
-    await loadOrCreateProfile(currentUser);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    currentUser = data.user;
+    await enterAfterAuth(currentUser);
   } catch(e) {
-    err.textContent=e.message||'Invalid email or password.';
+    err.textContent = e.message || 'Invalid email or password.';
     err.classList.add('show');
-    btn.innerHTML='Sign in';btn.disabled=false;
   }
+  btn.innerHTML = 'Sign in'; btn.disabled = false;
 }
 
 async function signUp() {
-  const email=document.getElementById('signup-email').value.trim(), pass=document.getElementById('signup-password').value, confirm=document.getElementById('signup-confirm').value;
-  const err=document.getElementById('signup-error'), success=document.getElementById('signup-success'), btn=document.getElementById('signup-btn');
-  err.classList.remove('show');success.classList.remove('show');
-  if (!email||!pass){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
-  if (pass.length<6){err.textContent='Password must be at least 6 characters.';err.classList.add('show');return;}
-  if (pass!==confirm){err.textContent='Passwords do not match.';err.classList.add('show');return;}
-  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  if (!supabase){await delay(600);btn.innerHTML='Create account';btn.disabled=false;onAuthSuccess({id:'demo',email});return;}
+  const email   = document.getElementById('signup-email').value.trim();
+  const pass    = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-confirm').value;
+  const err     = document.getElementById('signup-error');
+  const btn     = document.getElementById('signup-btn');
+  err.classList.remove('show');
+  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.add('show'); return; }
+  if (pass !== confirm) { err.textContent = 'Passwords do not match.'; err.classList.add('show'); return; }
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+  if (!supabase) { await delay(600); btn.innerHTML = 'Create account'; btn.disabled = false; showOnboard(); return; }
   try {
-    // Sign up (email confirmation disabled in Supabase dashboard)
-    const{data:signUpData, error:signUpError}=await supabase.auth.signUp({email,password:pass});
-    if(signUpError) throw signUpError;
-    // Immediately sign in — works when email confirmation is disabled
-    const{data:signInData, error:signInError}=await supabase.auth.signInWithPassword({email,password:pass});
-    if(signInError) throw signInError;
-    currentUser=signInData.user;
-    btn.innerHTML='Create account';btn.disabled=false;
-    await loadOrCreateProfile(currentUser);
+    const { data, error } = await supabase.auth.signUp({ email, password: pass });
+    if (error) throw error;
+    // signUp returns a session immediately when email confirmation is OFF
+    if (data.session) {
+      currentUser = data.user;
+      btn.innerHTML = 'Create account'; btn.disabled = false;
+      showOnboard();
+    } else {
+      // Confirmation still on — fall back to sign in
+      const { data: d2, error: e2 } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (e2) throw e2;
+      currentUser = d2.user;
+      btn.innerHTML = 'Create account'; btn.disabled = false;
+      showOnboard();
+    }
   } catch(e) {
-    err.textContent=e.message||'Could not create account.';
+    err.textContent = e.message || 'Could not create account.';
     err.classList.add('show');
-    btn.innerHTML='Create account';btn.disabled=false;
+    btn.innerHTML = 'Create account'; btn.disabled = false;
   }
 }
 
@@ -810,28 +814,31 @@ async function handleSignOut(){
   showSignin();
 }
 
-function onAuthSuccess(user){currentUser=user;const saved=localStorage.getItem('liverlo_name');if(saved){state.liverName=saved;enterApp();}else showOnboard();}
-
-let _loadingProfile = false;
-async function loadOrCreateProfile(user){
-  if(!supabase||_loadingProfile)return;
-  _loadingProfile = true;
-  try {
-    const{data}=await supabase.from('profiles').select('*').eq('id',user.id).single();
-    if(data){
-      state.liverName=data.liver_name||'Livvy';state.health=data.health||100;
-      state.monthSpend=data.month_spend||0;state.weekSpend=data.week_spend||0;
-      state.weekDrinks=data.week_drinks||0;state.todayDrinks=data.today_drinks||0;
-      state.todayWater=data.today_water||0;
-      state.hasLogs=state.todayDrinks>0||state.weekDrinks>0;
-      enterApp();
-    } else showOnboard();
-  } catch(e) {
-    console.warn('loadOrCreateProfile error', e);
-    showOnboard();
-  } finally {
-    _loadingProfile = false;
+// Called after successful sign-in — loads profile then enters app
+async function enterAfterAuth(user) {
+  if (user && supabase) {
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (data) {
+        state.liverName   = data.liver_name   || 'Livvy';
+        state.health      = data.health       || 100;
+        state.monthSpend  = data.month_spend  || 0;
+        state.weekSpend   = data.week_spend   || 0;
+        state.weekDrinks  = data.week_drinks  || 0;
+        state.todayDrinks = data.today_drinks || 0;
+        state.todayWater  = data.today_water  || 0;
+        state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
+        enterApp();
+        return;
+      }
+    } catch(e) {
+      console.warn('Profile fetch failed, entering app anyway', e);
+    }
   }
+  // No profile found or DB unavailable — check localStorage then enter
+  const saved = localStorage.getItem('liverlo_name');
+  if (saved) { state.liverName = saved; enterApp(); }
+  else showOnboard();
 }
 
 /* ONBOARDING */
