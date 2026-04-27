@@ -818,8 +818,8 @@ async function handleSignOut(){
 async function enterAfterAuth(user) {
   if (user && supabase) {
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (data) {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (data && !error) {
         state.liverName   = data.liver_name   || 'Livvy';
         state.health      = data.health       || 100;
         state.monthSpend  = data.month_spend  || 0;
@@ -828,17 +828,33 @@ async function enterAfterAuth(user) {
         state.todayDrinks = data.today_drinks || 0;
         state.todayWater  = data.today_water  || 0;
         state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
+        const saved = localStorage.getItem('liverlo_name');
+        if (saved) state.liverName = saved;
         enterApp();
         return;
       }
+      // Profile row missing — new user or first login after schema setup
+      console.log('No profile found, going to onboarding');
     } catch(e) {
-      console.warn('Profile fetch failed, entering app anyway', e);
+      console.warn('Profile fetch error:', e.message);
     }
   }
-  // No profile found or DB unavailable — check localStorage then enter
+  // No profile found — check localStorage
   const saved = localStorage.getItem('liverlo_name');
-  if (saved) { state.liverName = saved; enterApp(); }
-  else showOnboard();
+  if (saved) {
+    state.liverName = saved;
+    // Try to create profile row silently
+    if (user && supabase) {
+      await supabase.from('profiles').upsert({
+        id: user.id, liver_name: saved, health: 100,
+        month_spend: 0, week_spend: 0, week_drinks: 0,
+        today_drinks: 0, today_water: 0
+      });
+    }
+    enterApp();
+  } else {
+    showOnboard();
+  }
 }
 
 /* ONBOARDING */
@@ -848,7 +864,14 @@ function appendEmoji(e){const inp=document.getElementById('onboard-name-input');
 async function saveOnboardName(){
   const name=document.getElementById('onboard-name-input').value.trim()||'Livvy';
   state.liverName=name;localStorage.setItem('liverlo_name',name);
-  if(supabase&&currentUser)await supabase.from('profiles').upsert({id:currentUser.id,liver_name:name,health:100,month_spend:0,week_spend:0,week_drinks:0,today_drinks:0,today_water:0,created_at:new Date().toISOString()});
+  if(supabase&&currentUser){
+    const{error}=await supabase.from('profiles').upsert({
+      id:currentUser.id, liver_name:name, health:100,
+      month_spend:0, week_spend:0, week_drinks:0,
+      today_drinks:0, today_water:0
+    });
+    if(error) console.warn('Profile create error:', error.message);
+  }
   enterApp();
 }
 
@@ -957,13 +980,34 @@ async function logAllDrinks() {
       state.todayWater += qty; state.health = Math.min(100, state.health + 0.5);
     }
     state.sessionCost += cost;
-    if (supabase && currentUser) {
-      await supabase.from('drink_logs').insert({user_id:currentUser.id,drink_type:k,quantity:qty,units,cost,logged_at:new Date().toISOString()});
-    }
   }
 
   if (supabase && currentUser) {
-    await supabase.from('profiles').update({health:state.health,week_drinks:state.weekDrinks,today_drinks:state.todayDrinks,week_spend:state.weekSpend,month_spend:state.monthSpend,today_water:state.todayWater}).eq('id',currentUser.id);
+    // Upsert profile first (ensures row exists before inserting drink_logs)
+    const profilePayload = {
+      id: currentUser.id,
+      liver_name: state.liverName,
+      health: state.health,
+      week_drinks: state.weekDrinks,
+      today_drinks: state.todayDrinks,
+      week_spend: state.weekSpend,
+      month_spend: state.monthSpend,
+      today_water: state.todayWater
+    };
+    const { error: profileErr } = await supabase.from('profiles').upsert(profilePayload);
+    if (profileErr) console.warn('Profile upsert error:', profileErr.message);
+
+    // Now insert drink logs
+    const logRows = Object.keys(basket).map(k => ({
+      user_id:    currentUser.id,
+      drink_type: k,
+      quantity:   basket[k],
+      units:      drinkData[k].units * basket[k],
+      cost:       drinkData[k].cost  * basket[k],
+      logged_at:  new Date().toISOString()
+    }));
+    const { error: logErr } = await supabase.from('drink_logs').insert(logRows);
+    if (logErr) console.warn('Drink log insert error:', logErr.message);
   }
 
   updateUI(); buildWeekStrip(); buildBarChart();
