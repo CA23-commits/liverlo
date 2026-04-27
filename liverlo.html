@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liverlo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #232640;
+    --accent-green: #4ade80;
+    --accent-yellow: #fbbf24;
+    --accent-red: #f87171;
+    --accent-blue: #60a5fa;
+    --accent-purple: #a78bfa;
+    --accent-orange: #fb923c;
+    --text: #f0f0f0;
+    --text-muted: #8b8fa8;
+    --btn-radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; min-height: 100vh; padding-bottom: 90px; overflow-y: auto; }
+  .screen.active { display: flex; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── AUTH SCREEN ── */
+  .auth-screen {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 32px 24px;
+  }
+  .auth-screen.active { display: flex; animation: fadeIn 0.4s ease; }
+  .auth-logo { font-family: 'Baloo 2', cursive; font-size: 42px; font-weight: 800; margin-bottom: 6px; }
+  .auth-logo span { color: var(--accent-green); }
+  .auth-tagline { font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 40px; text-align: center; }
+  .auth-card {
+    width: 100%; background: var(--surface); border-radius: 24px; padding: 28px 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .auth-step-title { font-family: 'Baloo 2', cursive; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .auth-step-sub { font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 24px; line-height: 1.5; }
+  .auth-input {
+    width: 100%; background: var(--surface2); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; color: var(--text); font-family: 'Nunito', sans-serif;
+    font-size: 16px; font-weight: 700; padding: 14px 16px; outline: none;
+    transition: border-color 0.2s; margin-bottom: 10px; display: block;
+  }
+  .auth-input:focus { border-color: var(--accent-green); }
+  .auth-input::placeholder { color: var(--text-muted); font-weight: 600; }
+  .auth-btn {
+    width: 100%; background: linear-gradient(135deg, var(--accent-green), #16a34a);
+    color: #fff; border: none; padding: 16px; border-radius: var(--btn-radius);
+    font-family: 'Baloo 2', cursive; font-size: 18px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(74,222,128,0.3);
+    transition: all 0.2s; margin-top: 14px;
+  }
+  .auth-btn:active { transform: scale(0.97); }
+  .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .auth-back {
+    background: none; border: none; color: var(--text-muted); font-size: 13px;
+    font-weight: 700; cursor: pointer; margin-top: 14px; display: block; text-align: center; width: 100%;
+  }
+  .auth-toggle {
+    margin-top: 18px; text-align: center; font-size: 13px; color: var(--text-muted); font-weight: 600;
+  }
+  .auth-toggle span { color: var(--accent-green); cursor: pointer; font-weight: 800; }
+  .auth-divider {
+    display: flex; align-items: center; gap: 10px; margin: 16px 0 6px;
+    font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
+  .forgot-link {
+    text-align: right; font-size: 12px; color: var(--accent-green); font-weight: 700;
+    cursor: pointer; margin-top: 4px; margin-bottom: 2px;
+  }
+  .auth-success {
+    background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3);
+    border-radius: 12px; padding: 12px 16px; margin-top: 14px;
+    font-size: 13px; color: var(--accent-green); font-weight: 700; display: none; text-align: center;
+  }
+  .auth-success.show { display: block; }
+  .auth-error { color: var(--accent-red); font-size: 12px; font-weight: 700; margin-top: 8px; display: none; }
+  .auth-error.show { display: block; }
+  .demo-link {
+    margin-top: 20px; font-size: 12px; color: var(--text-muted); font-weight: 600;
+    text-align: center; cursor: pointer; text-decoration: underline;
+  }
+
+  /* ── ONBOARDING — name your liver ── */
+  .onboard-screen {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 32px 24px;
+  }
+  .onboard-screen.active { display: flex; animation: fadeIn 0.4s ease; }
+  .onboard-liver-preview {
+    margin: 20px 0;
+    filter: drop-shadow(0 12px 28px rgba(74,222,128,0.45));
+    animation: liverpulse 2.5s ease-in-out infinite;
+  }
+  @keyframes liverpulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.05);} }
+  .onboard-title { font-family: 'Baloo 2', cursive; font-size: 26px; font-weight: 800; text-align: center; }
+  .onboard-sub { font-size: 14px; color: var(--text-muted); font-weight: 600; text-align: center; margin: 8px 0 28px; line-height: 1.5; }
+  .name-input-wrap { width: 100%; position: relative; }
+  .name-input {
+    width: 100%; background: var(--surface); border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 16px; color: var(--text); font-family: 'Baloo 2', cursive;
+    font-size: 22px; font-weight: 800; padding: 16px 48px 16px 18px; outline: none;
+    transition: border-color 0.2s; text-align: center;
+  }
+  .name-input:focus { border-color: var(--accent-green); }
+  .name-char-count { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted); font-weight: 700; }
+  .emoji-suggestions { display: flex; gap: 8px; margin: 12px 0 24px; flex-wrap: wrap; justify-content: center; }
+  .emoji-chip {
+    background: var(--surface); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+    padding: 6px 10px; font-size: 20px; cursor: pointer; transition: all 0.15s;
+  }
+  .emoji-chip:active { transform: scale(0.9); background: rgba(74,222,128,0.1); border-color: var(--accent-green); }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    padding: 18px 20px 10px; display: flex;
+    justify-content: space-between; align-items: center;
+    background: var(--bg); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-title { font-family: 'Baloo 2', cursive; font-size: 22px; font-weight: 800; }
+  .topbar-title span { color: var(--accent-green); }
+  .streak-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, #ff6b35, #fbbf24);
+    padding: 6px 12px; border-radius: 20px;
+    font-weight: 800; font-size: 14px;
+    box-shadow: 0 4px 12px rgba(251,191,36,0.3);
+  }
+
+  /* ── LIVER HERO ── */
+  .liver-hero {
+    margin: 10px 16px;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border-radius: 24px; padding: 24px;
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .liver-hero::before {
+    content: ''; position: absolute; top: -30px; right: -30px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .liver-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .liver-label { font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .liver-name-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .liver-name { font-family: 'Baloo 2', cursive; font-size: 26px; font-weight: 800; }
+  .edit-name-btn {
+    background: rgba(255,255,255,0.07); border: none; border-radius: 8px;
+    padding: 4px 7px; font-size: 13px; cursor: pointer; color: var(--text-muted);
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .edit-name-btn:hover { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+  .liver-mood { font-size: 13px; color: var(--accent-green); font-weight: 700; margin-top: 2px; }
+  .liver-avatar-wrap { display: flex; align-items: center; justify-content: center; margin: 16px 0; }
+  .liver-svg {
+    width: 120px; height: 100px;
+    filter: drop-shadow(0 8px 20px rgba(74,222,128,0.4));
+    animation: liverpulse 2.5s ease-in-out infinite;
+  }
+  .health-bar-wrap { width: 100%; margin-top: 6px; }
+  .health-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .health-label span:last-child { color: var(--accent-green); }
+  .health-bar { height: 12px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; }
+  .health-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent-green), #86efac);
+    border-radius: 999px; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 10px rgba(74,222,128,0.5);
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 14px 16px 0; }
+  .stat-card {
+    background: var(--surface); border-radius: 16px; padding: 14px 10px;
+    text-align: center; border: 1px solid rgba(255,255,255,0.05);
+  }
+  .stat-icon { font-size: 22px; margin-bottom: 4px; }
+  .stat-val { font-family: 'Baloo 2', cursive; font-size: 18px; font-weight: 800; }
+  .stat-lbl { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+
+  /* ── ADD BTN ── */
+  .add-btn-wrap { padding: 16px; }
+  .add-btn {
+    width: 100%; background: linear-gradient(135deg, var(--accent-green), #16a34a);
+    color: #fff; border: none; padding: 18px; border-radius: var(--btn-radius);
+    font-family: 'Baloo 2', cursive; font-size: 18px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(74,222,128,0.35);
+    transition: all 0.2s;
+  }
+  .add-btn:active { transform: scale(0.97); }
+
+  /* ── WEEK GRID ── */
+  .section-title { padding: 10px 16px 8px; font-family: 'Baloo 2', cursive; font-size: 16px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .week-grid { display: flex; gap: 8px; padding: 0 16px 14px; }
+  .day-dot {
+    flex: 1; aspect-ratio: 1; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; gap: 2px; border: 2px solid transparent;
+  }
+  .day-dot.ok  { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); }
+  .day-dot.ok .day-icon { color: var(--accent-green); font-size: 14px; }
+  .day-dot.warn { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.3); }
+  .day-dot.warn .day-icon { color: var(--accent-yellow); font-size: 14px; }
+  .day-dot.bad { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.3); }
+  .day-dot.bad .day-icon { color: var(--accent-red); font-size: 14px; }
+  .day-dot.future { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+  .day-dot.future .day-icon { color: var(--text-muted); font-size: 14px; }
+  .day-name { color: var(--text-muted); font-size: 9px; }
+
+  /* ── INSIGHT ── */
+  .insight-card {
+    margin: 0 16px 14px;
+    background: linear-gradient(135deg, #1e2040, #252850);
+    border-radius: 18px; padding: 16px;
+    display: flex; gap: 12px; align-items: center;
+    border: 1px solid rgba(96,165,250,0.2);
+  }
+  .insight-icon { font-size: 28px; flex-shrink: 0; }
+  .insight-text { font-size: 13px; line-height: 1.5; color: #c5c8e0; font-weight: 600; }
+  .insight-text strong { color: var(--accent-blue); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 420px;
+    background: rgba(26,29,46,0.97); backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex; padding: 8px 0 14px; z-index: 100;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer; padding: 4px 0;
+    color: var(--text-muted); font-size: 10px; font-family: 'Nunito', sans-serif; font-weight: 700;
+    transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--accent-green); }
+  .nav-btn .nav-icon { font-size: 22px; }
+
+  /* ── LOG SCREEN ── */
+  .log-header { padding: 18px 20px 12px; }
+  .log-header p { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+  .drink-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; }
+  .drink-card {
+    background: var(--surface); border-radius: 18px; padding: 18px 14px;
+    cursor: pointer; border: 2px solid transparent;
+    transition: all 0.2s; text-align: center; position: relative; overflow: hidden;
+  }
+  .drink-card:active { transform: scale(0.96); }
+  .drink-card.selected { border-color: var(--accent-green); background: rgba(74,222,128,0.08); }
+  .drink-card::after {
+    content: attr(data-units) ' u'; position: absolute; top: 8px; right: 8px;
+    background: rgba(255,255,255,0.08); border-radius: 6px;
+    padding: 2px 6px; font-size: 9px; font-weight: 800; color: var(--text-muted);
+  }
+  .drink-emoji { font-size: 36px; margin-bottom: 6px; }
+  .drink-name { font-weight: 800; font-size: 14px; }
+  .drink-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .qty-selector { margin: 16px; background: var(--surface); border-radius: 18px; padding: 18px; }
+  .qty-label { font-weight: 800; margin-bottom: 12px; font-size: 15px; }
+  .qty-row { display: flex; align-items: center; justify-content: space-between; }
+  .qty-btn {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--surface2); border: none; color: var(--text);
+    font-size: 22px; font-weight: 800; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:active { transform: scale(0.9); background: var(--accent-green); color: #000; }
+  .qty-num { font-family: 'Baloo 2', cursive; font-size: 36px; font-weight: 800; }
+  .cost-preview {
+    margin: 0 16px 16px;
+    background: linear-gradient(135deg, rgba(167,139,250,0.1), rgba(96,165,250,0.1));
+    border-radius: 14px; padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid rgba(167,139,250,0.2);
+  }
+  .cost-label { font-size: 13px; color: var(--text-muted); font-weight: 700; }
+  .cost-val { font-family: 'Baloo 2', cursive; font-size: 20px; font-weight: 800; color: var(--accent-purple); }
+  .log-confirm-btn {
+    margin: 0 16px 16px; width: calc(100% - 32px);
+    background: linear-gradient(135deg, var(--accent-green), #16a34a);
+    color: #fff; border: none; padding: 18px; border-radius: var(--btn-radius);
+    font-family: 'Baloo 2', cursive; font-size: 18px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(74,222,128,0.3);
+  }
+
+  /* ── STATS SCREEN ── */
+  .spend-hero {
+    margin: 10px 16px;
+    background: linear-gradient(135deg, #1a1040, #2a1060);
+    border-radius: 24px; padding: 24px;
+    border: 1px solid rgba(167,139,250,0.2);
+  }
+  .spend-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+  .spend-amount { font-family: 'Baloo 2', cursive; font-size: 44px; font-weight: 800; color: var(--accent-purple); margin: 4px 0; }
+  .spend-sub { font-size: 13px; color: #a78bfa; font-weight: 600; }
+  .instead-title { font-size: 13px; font-weight: 800; margin-top: 16px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .instead-grid { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .instead-item {
+    background: rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 12px;
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+  }
+  .chart-card {
+    margin: 10px 16px; background: var(--surface); border-radius: 20px; padding: 18px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .chart-title { font-weight: 800; font-size: 15px; margin-bottom: 14px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 6px 6px 0 0; transition: height 0.6s; min-height: 4px; }
+  .bar-lbl { font-size: 9px; color: var(--text-muted); font-weight: 700; }
+
+  /* ── BADGES ── */
+  .badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 16px; }
+  .badge-card {
+    background: var(--surface); border-radius: 16px; padding: 16px 10px;
+    text-align: center; border: 1px solid rgba(255,255,255,0.05);
+  }
+  .badge-card.locked { opacity: 0.35; filter: grayscale(1); }
+  .badge-card.unlocked { border-color: rgba(251,191,36,0.4); box-shadow: 0 0 16px rgba(251,191,36,0.1); }
+  .badge-icon { font-size: 32px; margin-bottom: 6px; }
+  .badge-name { font-size: 11px; font-weight: 800; }
+  .badge-desc { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: linear-gradient(135deg, var(--accent-green), #16a34a);
+    color: white; padding: 14px 24px; border-radius: 20px;
+    font-family: 'Baloo 2', cursive; font-size: 16px; font-weight: 800;
+    box-shadow: 0 8px 24px rgba(74,222,128,0.4);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; align-items: flex-end; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+  .modal-sheet {
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 24px 20px 32px; width: 100%; max-width: 420px;
+    animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes slideUp { from{transform:translateY(100%);}to{transform:translateY(0);} }
+  .modal-pill { width: 36px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 999px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Baloo 2', cursive; font-size: 24px; font-weight: 800; text-align: center; }
+  .modal-emoji { font-size: 60px; text-align: center; display: block; margin: 12px 0; }
+  .modal-msg { text-align: center; color: var(--text-muted); font-size: 14px; line-height: 1.5; font-weight: 600; margin: 8px 0 20px; }
+  .modal-close {
+    width: 100%; background: var(--surface2); border: none; color: var(--text);
+    padding: 16px; border-radius: 14px; font-family: 'Baloo 2', cursive;
+    font-size: 16px; font-weight: 800; cursor: pointer;
+  }
+
+  /* ── EDIT NAME MODAL ── */
+  .name-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    z-index: 300; align-items: flex-end; justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  .name-modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+  .name-modal-sheet {
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 28px 20px 36px; width: 100%; max-width: 420px;
+    animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .name-modal-title { font-family: 'Baloo 2', cursive; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .name-modal-sub { font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 20px; }
+  .name-modal-input {
+    width: 100%; background: var(--surface2); border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 14px; color: var(--text); font-family: 'Baloo 2', cursive;
+    font-size: 22px; font-weight: 800; padding: 14px 18px; outline: none;
+    transition: border-color 0.2s; margin-bottom: 14px; text-align: center;
+  }
+  .name-modal-input:focus { border-color: var(--accent-green); }
+  .emoji-picker-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .ep-chip {
+    background: var(--surface2); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 7px 11px; font-size: 20px; cursor: pointer; transition: all 0.15s;
+  }
+  .ep-chip:active { transform: scale(0.88); background: rgba(74,222,128,0.12); border-color: var(--accent-green); }
+  .name-save-btn {
+    width: 100%; background: linear-gradient(135deg, var(--accent-green), #16a34a);
+    color: #fff; border: none; padding: 16px; border-radius: var(--btn-radius);
+    font-family: 'Baloo 2', cursive; font-size: 17px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 5px 18px rgba(74,222,128,0.3);
+  }
+  .name-cancel-btn {
+    width: 100%; background: none; border: none; color: var(--text-muted);
+    font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  /* spinner */
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ════════════════════════════════
+       AUTH — SIGN IN / SIGN UP
+  ════════════════════════════════ -->
+  <div class="auth-screen active" id="screen-auth">
+    <div class="auth-logo">Liver<span>lo</span></div>
+    <div class="auth-tagline">Your liver's best friend 🍃<br>Track, learn, and level up.</div>
+
+    <!-- SIGN IN -->
+    <div class="auth-card" id="panel-signin">
+      <div class="auth-step-title">Welcome back 👋</div>
+      <div class="auth-step-sub">Sign in to your account to continue.</div>
+      <input class="auth-input" id="signin-email" type="email" placeholder="your@email.com" autocomplete="email">
+      <input class="auth-input" id="signin-password" type="password" placeholder="Password" autocomplete="current-password">
+      <div class="forgot-link" onclick="showForgot()">Forgot password?</div>
+      <div class="auth-error" id="signin-error">Invalid email or password.</div>
+      <button class="auth-btn" id="signin-btn" onclick="signIn()">Sign in →</button>
+      <div class="auth-toggle">No account yet? <span onclick="showSignup()">Create one</span></div>
+      <span class="demo-link" onclick="skipAuth()">Skip for now (demo mode)</span>
+    </div>
+
+    <!-- SIGN UP -->
+    <div class="auth-card" id="panel-signup" style="display:none">
+      <div class="auth-step-title">Create account 🌱</div>
+      <div class="auth-step-sub">It only takes a few seconds.</div>
+      <input class="auth-input" id="signup-email" type="email" placeholder="your@email.com" autocomplete="email">
+      <input class="auth-input" id="signup-password" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
+      <input class="auth-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password">
+      <div class="auth-error" id="signup-error">Something went wrong.</div>
+      <div class="auth-success" id="signup-success">✅ Check your email to confirm your account, then sign in!</div>
+      <button class="auth-btn" id="signup-btn" onclick="signUp()">Create account →</button>
+      <div class="auth-toggle">Already have an account? <span onclick="showSignin()">Sign in</span></div>
+    </div>
+
+    <!-- FORGOT PASSWORD -->
+    <div class="auth-card" id="panel-forgot" style="display:none">
+      <div class="auth-step-title">Reset password 🔑</div>
+      <div class="auth-step-sub">Enter your email and we'll send a reset link.</div>
+      <input class="auth-input" id="forgot-email" type="email" placeholder="your@email.com" autocomplete="email">
+      <div class="auth-error" id="forgot-error">Email not found.</div>
+      <div class="auth-success" id="forgot-success">✅ Reset link sent! Check your inbox.</div>
+      <button class="auth-btn" id="forgot-btn" onclick="sendReset()">Send reset link →</button>
+      <button class="auth-back" onclick="showSignin()">← Back to sign in</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       ONBOARDING — NAME YOUR LIVER
+  ════════════════════════════════ -->
+  <div class="onboard-screen" id="screen-onboard">
+    <div class="auth-logo" style="margin-bottom:4px">Liver<span>lo</span></div>
+    <svg class="onboard-liver-preview" width="100" height="84" viewBox="0 0 120 100">
+      <path d="M10 55 C8 30,25 12,50 14 C65 15,75 10,90 18 C108 28,112 50,100 65 C90 76,70 80,55 78 C35 75,12 78,10 55Z" fill="#4ade80" opacity="0.9"/>
+      <path d="M10 55 C8 30,25 12,50 14 C65 15,75 10,90 18 C108 28,112 50,100 65 C90 76,70 80,55 78 C35 75,12 78,10 55Z" fill="none" stroke="#86efac" stroke-width="2" opacity="0.5"/>
+      <circle cx="42" cy="42" r="7" fill="#fff"/><circle cx="42" cy="43" r="4" fill="#1a1d2e"/><circle cx="44" cy="41" r="1.5" fill="#fff"/>
+      <circle cx="68" cy="40" r="7" fill="#fff"/><circle cx="68" cy="41" r="4" fill="#1a1d2e"/><circle cx="70" cy="39" r="1.5" fill="#fff"/>
+      <path d="M50 60 Q55 67 65 60" stroke="#1a1d2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <circle cx="35" cy="55" r="5" fill="#f9a8d4" opacity="0.5"/>
+      <circle cx="80" cy="52" r="5" fill="#f9a8d4" opacity="0.5"/>
+    </svg>
+    <div class="onboard-title">Name your liver!</div>
+    <div class="onboard-sub">Give your new sidekick a name. Text, emoji, or both — go wild 🎉</div>
+    <div class="name-input-wrap" style="width:100%">
+      <input class="name-input" id="onboard-name-input" maxlength="24" placeholder="e.g. Livvy 🍀" oninput="updateOnboardCharCount(this)">
+      <span class="name-char-count" id="onboard-char-count">0/24</span>
+    </div>
+    <div class="emoji-suggestions">
+      <span class="emoji-chip" onclick="appendEmoji('🍀')">🍀</span>
+      <span class="emoji-chip" onclick="appendEmoji('⚡')">⚡</span>
+      <span class="emoji-chip" onclick="appendEmoji('🌿')">🌿</span>
+      <span class="emoji-chip" onclick="appendEmoji('💪')">💪</span>
+      <span class="emoji-chip" onclick="appendEmoji('🦸')">🦸</span>
+      <span class="emoji-chip" onclick="appendEmoji('🌟')">🌟</span>
+      <span class="emoji-chip" onclick="appendEmoji('🐸')">🐸</span>
+      <span class="emoji-chip" onclick="appendEmoji('🔥')">🔥</span>
+    </div>
+    <button class="auth-btn" style="width:100%" onclick="saveOnboardName()">Let's go! →</button>
+  </div>
+
+  <!-- ════════════════════════════════
+       HOME SCREEN
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-home">
+    <div class="topbar">
+      <div class="topbar-title">Liver<span>lo</span></div>
+      <div class="streak-badge">🔥 <span id="streak-count">5</span> days</div>
+    </div>
+    <div class="liver-hero">
+      <div class="liver-top">
+        <div>
+          <div class="liver-label">Your liver</div>
+          <div class="liver-name-row">
+            <div class="liver-name" id="liver-name">Livvy</div>
+            <button class="edit-name-btn" onclick="openNameModal()" title="Rename">✏️</button>
+          </div>
+          <div class="liver-mood" id="liver-mood">😄 Feeling absolutely great!</div>
+        </div>
+        <div style="text-align:right">
+          <div class="liver-label">Level</div>
+          <div class="liver-name" style="color:var(--accent-green)" id="liver-level">Lv. 7</div>
+        </div>
+      </div>
+      <div class="liver-avatar-wrap">
+        <svg id="liver-svg" class="liver-svg" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+          <path id="liver-body" d="M10 55 C8 30,25 12,50 14 C65 15,75 10,90 18 C108 28,112 50,100 65 C90 76,70 80,55 78 C35 75,12 78,10 55Z" fill="#4ade80" opacity="0.9"/>
+          <path d="M10 55 C8 30,25 12,50 14 C65 15,75 10,90 18 C108 28,112 50,100 65 C90 76,70 80,55 78 C35 75,12 78,10 55Z" fill="none" stroke="#86efac" stroke-width="2" opacity="0.5"/>
+          <circle cx="42" cy="42" r="7" fill="#fff"/><circle cx="42" cy="43" r="4" fill="#1a1d2e"/><circle cx="44" cy="41" r="1.5" fill="#fff"/>
+          <circle cx="68" cy="40" r="7" fill="#fff"/><circle cx="68" cy="41" r="4" fill="#1a1d2e"/><circle cx="70" cy="39" r="1.5" fill="#fff"/>
+          <path id="liver-mouth" d="M50 60 Q55 67 65 60" stroke="#1a1d2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <circle cx="35" cy="55" r="5" fill="#f9a8d4" opacity="0.5"/>
+          <circle cx="80" cy="52" r="5" fill="#f9a8d4" opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="health-bar-wrap">
+        <div class="health-label"><span>Health</span><span id="health-pct">87%</span></div>
+        <div class="health-bar"><div class="health-fill" id="health-fill" style="width:87%"></div></div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">🍺</div><div class="stat-val" id="stat-today">2</div><div class="stat-lbl">Today</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="stat-week">8</div><div class="stat-lbl">This week</div></div>
+      <div class="stat-card"><div class="stat-icon">💶</div><div class="stat-val" id="stat-spend">€22</div><div class="stat-lbl">Spent</div></div>
+    </div>
+    <div class="add-btn-wrap">
+      <button class="add-btn" onclick="goTo('screen-log')">+ Log a drink</button>
+    </div>
+    <div class="section-title">This week</div>
+    <div class="week-grid">
+      <div class="day-dot ok"><div class="day-icon">✓</div><div class="day-name">Mon</div></div>
+      <div class="day-dot ok"><div class="day-icon">✓</div><div class="day-name">Tue</div></div>
+      <div class="day-dot warn"><div class="day-icon">⚡</div><div class="day-name">Wed</div></div>
+      <div class="day-dot ok"><div class="day-icon">✓</div><div class="day-name">Thu</div></div>
+      <div class="day-dot bad"><div class="day-icon">!</div><div class="day-name">Fri</div></div>
+      <div class="day-dot ok"><div class="day-icon">✓</div><div class="day-name">Sat</div></div>
+      <div class="day-dot future"><div class="day-icon">○</div><div class="day-name">Sun</div></div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">💡</div>
+      <div class="insight-text">You're below average! <span id="insight-liver-name">Livvy</span> says <strong>thank you</strong>. Keep it up and you'll unlock the "Hydration Champion" badge 🏆</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       LOG SCREEN
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-log">
+    <div class="topbar">
+      <button onclick="goTo('screen-home')" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;">←</button>
+      <div class="topbar-title">What did you <span>drink?</span></div>
+      <div style="width:30px"></div>
+    </div>
+    <div class="log-header"><p>Tap a drink, pick the quantity. Done! 🎯</p></div>
+    <div class="drink-grid">
+      <div class="drink-card" data-drink="beer"     data-units="1.5" onclick="selectDrink(this)"><div class="drink-emoji">🍺</div><div class="drink-name">Beer</div><div class="drink-sub">33cl 5% · €4</div></div>
+      <div class="drink-card" data-drink="wine"     data-units="1.5" onclick="selectDrink(this)"><div class="drink-emoji">🍷</div><div class="drink-name">Wine</div><div class="drink-sub">125ml 13% · €3.5</div></div>
+      <div class="drink-card" data-drink="cocktail" data-units="2"   onclick="selectDrink(this)"><div class="drink-emoji">🍹</div><div class="drink-name">Cocktail</div><div class="drink-sub">Long drink · €8</div></div>
+      <div class="drink-card" data-drink="shot"     data-units="1"   onclick="selectDrink(this)"><div class="drink-emoji">🥃</div><div class="drink-name">Shot</div><div class="drink-sub">4cl 40% · €3</div></div>
+      <div class="drink-card" data-drink="prosecco" data-units="1.5" onclick="selectDrink(this)"><div class="drink-emoji">🥂</div><div class="drink-name">Prosecco</div><div class="drink-sub">125ml 11% · €5</div></div>
+      <div class="drink-card" data-drink="pint"     data-units="2.5" onclick="selectDrink(this)"><div class="drink-emoji">🍻</div><div class="drink-name">Pint</div><div class="drink-sub">568ml 5% · €6</div></div>
+    </div>
+    <div class="qty-selector">
+      <div class="qty-label">How many did you have?</div>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <div class="qty-num" id="qty-display">1</div>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+    </div>
+    <div class="cost-preview">
+      <div><div class="cost-label">Estimated spend</div><div style="font-size:10px;color:var(--text-muted)">for this session</div></div>
+      <div class="cost-val" id="cost-preview">€0</div>
+    </div>
+    <button class="log-confirm-btn" onclick="logDrink()">✓ Log it!</button>
+  </div>
+
+  <!-- ════════════════════════════════
+       STATS SCREEN
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-stats">
+    <div class="topbar"><div class="topbar-title">Your <span>Stats</span></div></div>
+    <div class="spend-hero">
+      <div class="spend-label">💸 Spent on alcohol this month</div>
+      <div class="spend-amount" id="monthly-spend">€68</div>
+      <div class="spend-sub">This month</div>
+      <div class="instead-title">With that money you could've…</div>
+      <div class="instead-grid">
+        <div class="instead-item">✈️ Ryanair flight</div>
+        <div class="instead-item">🎮 3 PS5 games</div>
+        <div class="instead-item">🍕 17 pizzas</div>
+        <div class="instead-item">📚 6 books</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📊 Alcohol units — Last 7 days</div>
+      <div class="bar-chart">
+        <div class="bar-wrap"><div class="bar" style="height:30%;background:var(--accent-green)"></div><div class="bar-lbl">Mon</div></div>
+        <div class="bar-wrap"><div class="bar" style="height:45%;background:var(--accent-green)"></div><div class="bar-lbl">Tue</div></div>
+        <div class="bar-wrap"><div class="bar" style="height:60%;background:var(--accent-yellow)"></div><div class="bar-lbl">Wed</div></div>
+        <div class="bar-wrap"><div class="bar" style="height:20%;background:var(--accent-green)"></div><div class="bar-lbl">Thu</div></div>
+        <div class="bar-wrap"><div class="bar" style="height:100%;background:var(--accent-red)"></div><div class="bar-lbl">Fri</div></div>
+        <div class="bar-wrap"><div class="bar" style="height:50%;background:var(--accent-green)"></div><div class="bar-lbl">Sat</div></div>
+        <div class="bar-wrap"><div class="bar" style="height:10%;background:var(--accent-green)"></div><div class="bar-lbl">Sun</div></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px;font-size:11px;font-weight:700;color:var(--text-muted)">
+        <span><span style="color:var(--accent-green)">●</span> Within limits</span>
+        <span><span style="color:var(--accent-yellow)">●</span> Watch out</span>
+        <span><span style="color:var(--accent-red)">●</span> Excess</span>
+      </div>
+    </div>
+    <div class="insight-card" style="margin:0 16px 14px">
+      <div class="insight-icon">🧠</div>
+      <div class="insight-text">Your liver takes about <strong>1 hour</strong> to process each alcohol unit. On Friday you had 6 — nearly 6 hours of overtime! 💪</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       BADGES SCREEN
+  ════════════════════════════════ -->
+  <div class="screen" id="screen-badges">
+    <div class="topbar"><div class="topbar-title">Your <span>Badges</span></div></div>
+    <div style="padding:0 16px 12px;color:var(--text-muted);font-size:13px;font-weight:600">7/18 unlocked · Keep going! 🚀</div>
+    <div class="badges-grid">
+      <div class="badge-card unlocked"><div class="badge-icon">🌱</div><div class="badge-name">First time</div><div class="badge-desc">First drink logged</div></div>
+      <div class="badge-card unlocked"><div class="badge-icon">🔥</div><div class="badge-name">3-day streak</div><div class="badge-desc">3 days in a row!</div></div>
+      <div class="badge-card unlocked"><div class="badge-icon">⭐</div><div class="badge-name">Full week</div><div class="badge-desc">7 days within limits</div></div>
+      <div class="badge-card unlocked"><div class="badge-icon">💧</div><div class="badge-name">Hydrated</div><div class="badge-desc">One alcohol-free day</div></div>
+      <div class="badge-card unlocked"><div class="badge-icon">🧮</div><div class="badge-name">Accountant</div><div class="badge-desc">10 sessions logged</div></div>
+      <div class="badge-card unlocked"><div class="badge-icon">🌙</div><div class="badge-name">Sober night</div><div class="badge-desc">Night out, no drinks</div></div>
+      <div class="badge-card unlocked"><div class="badge-icon">💰</div><div class="badge-name">Saver!</div><div class="badge-desc">€10 saved</div></div>
+      <div class="badge-card locked"><div class="badge-icon">🏆</div><div class="badge-name">Champion</div><div class="badge-desc">30-day streak</div></div>
+      <div class="badge-card locked"><div class="badge-icon">🦸</div><div class="badge-name">Superhero</div><div class="badge-desc">Liver 100% × 7 days</div></div>
+      <div class="badge-card locked"><div class="badge-icon">✈️</div><div class="badge-name">Traveller</div><div class="badge-desc">€200 saved</div></div>
+      <div class="badge-card locked"><div class="badge-icon">🌿</div><div class="badge-name">Dry month</div><div class="badge-desc">A light month</div></div>
+      <div class="badge-card locked"><div class="badge-icon">👑</div><div class="badge-name">Liver King</div><div class="badge-desc">Level 20 reached</div></div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- ════════════════════════════════
+       BOTTOM NAV
+  ════════════════════════════════ -->
+  <nav class="bottom-nav" id="bottom-nav" style="display:none">
+    <button class="nav-btn active" id="nav-home"   onclick="goTo('screen-home')"><span class="nav-icon">🫀</span><span>Home</span></button>
+    <button class="nav-btn"        id="nav-log"    onclick="goTo('screen-log')"><span class="nav-icon">➕</span><span>Log</span></button>
+    <button class="nav-btn"        id="nav-stats"  onclick="goTo('screen-stats')"><span class="nav-icon">📊</span><span>Stats</span></button>
+    <button class="nav-btn"        id="nav-badges" onclick="goTo('screen-badges')"><span class="nav-icon">🏅</span><span>Badges</span></button>
+  </nav>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">✨ Logged!</div>
+
+  <!-- Drink feedback modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-sheet">
+      <div class="modal-pill"></div>
+      <div class="modal-title" id="modal-title">Nice one!</div>
+      <span class="modal-emoji" id="modal-emoji">🎉</span>
+      <div class="modal-msg" id="modal-msg">Drink logged!</div>
+      <button class="modal-close" onclick="closeModal()">Keep going 💪</button>
+    </div>
+  </div>
+
+  <!-- Edit liver name modal -->
+  <div class="name-modal-overlay" id="name-modal">
+    <div class="name-modal-sheet">
+      <div class="modal-pill"></div>
+      <div class="name-modal-title">Rename your liver</div>
+      <div class="name-modal-sub">Text, emoji, or a wild combination — you decide!</div>
+      <input class="name-modal-input" id="name-modal-input" maxlength="24" placeholder="e.g. The Beast 🔥" oninput="syncNameCount(this)">
+      <div class="emoji-picker-row">
+        <span class="ep-chip" onclick="appendEmojiModal('🍀')">🍀</span>
+        <span class="ep-chip" onclick="appendEmojiModal('⚡')">⚡</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🌿')">🌿</span>
+        <span class="ep-chip" onclick="appendEmojiModal('💪')">💪</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🦸')">🦸</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🌟')">🌟</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🐸')">🐸</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🔥')">🔥</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🏆')">🏆</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🎯')">🎯</span>
+        <span class="ep-chip" onclick="appendEmojiModal('🧬')">🧬</span>
+        <span class="ep-chip" onclick="appendEmojiModal('👑')">👑</span>
+      </div>
+      <button class="name-save-btn" onclick="saveNameModal()">Save name ✓</button>
+      <button class="name-cancel-btn" onclick="closeNameModal()">Cancel</button>
+    </div>
+  </div>
+
+</div><!-- end .app -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+/* ═══════════════════════════════════════
+   SUPABASE CONFIG
+   Replace with your real project values
+═══════════════════════════════════════ */
+const SUPABASE_URL = 'https://ocxmbacpbdaczsolgwqx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeG1iYWNwYmRhY3pzb2xnd3F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTAyNTUsImV4cCI6MjA5Mjg4NjI1NX0.AjIzPVkAH_r1TjpT4H9ughL-Y1ez_7ob2xxsJ_tY2Ic';
+let supabase = null;
+let currentUser = null;
+
+try {
+  if (window.supabase && window.supabase.createClient) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Listen for email confirmation / session restore
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && !currentUser) {
+        currentUser = session.user;
+        await loadOrCreateProfile(currentUser);
+      }
+    });
+  } else {
+    console.warn('Supabase SDK not loaded — running in demo mode');
+  }
+} catch(e) {
+  console.warn('Supabase init failed — running in demo mode', e);
+}
+
+/* ═══════════════════════════════════════
+   APP STATE
+═══════════════════════════════════════ */
+let state = {
+  health: 87, streak: 5, todayDrinks: 2, weekDrinks: 8,
+  weekSpend: 22, monthSpend: 68, selectedDrink: null, qty: 1,
+  sessionCost: 0, liverName: 'Livvy', demoMode: false
+};
+
+const drinks = {
+  beer:     { units: 1.5, cost: 4 },
+  wine:     { units: 1.5, cost: 3.5 },
+  cocktail: { units: 2,   cost: 8 },
+  shot:     { units: 1,   cost: 3 },
+  prosecco: { units: 1.5, cost: 5 },
+  pint:     { units: 2.5, cost: 6 }
+};
+
+/* ═══════════════════════════════════════
+   AUTH FLOWS — EMAIL
+═══════════════════════════════════════ */
+function showSignin() {
+  document.getElementById('panel-signin').style.display = 'block';
+  document.getElementById('panel-signup').style.display = 'none';
+  document.getElementById('panel-forgot').style.display = 'none';
+}
+function showSignup() {
+  document.getElementById('panel-signin').style.display = 'none';
+  document.getElementById('panel-signup').style.display = 'block';
+  document.getElementById('panel-forgot').style.display = 'none';
+}
+function showForgot() {
+  document.getElementById('panel-signin').style.display = 'none';
+  document.getElementById('panel-signup').style.display = 'none';
+  document.getElementById('panel-forgot').style.display = 'block';
+}
+
+async function signIn() {
+  const email = document.getElementById('signin-email').value.trim();
+  const pass  = document.getElementById('signin-password').value;
+  const err   = document.getElementById('signin-error');
+  const btn   = document.getElementById('signin-btn');
+  err.classList.remove('show');
+
+  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+
+  if (!supabase) {
+    await new Promise(r => setTimeout(r, 600));
+    onAuthSuccess({ id: 'demo-user', email: 'demo@liverlo.app' });
+    btn.innerHTML = 'Sign in →'; btn.disabled = false;
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    currentUser = data.user;
+    await loadOrCreateProfile(currentUser);
+  } catch(e) {
+    err.textContent = e.message || 'Invalid email or password.';
+    err.classList.add('show');
+  }
+  btn.innerHTML = 'Sign in →'; btn.disabled = false;
+}
+
+async function signUp() {
+  const email   = document.getElementById('signup-email').value.trim();
+  const pass    = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-confirm').value;
+  const err     = document.getElementById('signup-error');
+  const success = document.getElementById('signup-success');
+  const btn     = document.getElementById('signup-btn');
+  err.classList.remove('show'); success.classList.remove('show');
+
+  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.add('show'); return; }
+  if (pass !== confirm) { err.textContent = 'Passwords do not match.'; err.classList.add('show'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+
+  if (!supabase) {
+    await new Promise(r => setTimeout(r, 600));
+    success.textContent = '✅ Demo mode — signing you in directly!';
+    success.classList.add('show');
+    setTimeout(() => onAuthSuccess({ id: 'demo-user', email }), 1200);
+    btn.innerHTML = 'Create account →'; btn.disabled = false;
+    return;
+  }
+
+  try {
+    const { error } = await supabase.auth.signUp({ email, password: pass });
+    if (error) throw error;
+    success.classList.add('show');
+    btn.textContent = 'Email sent!';
+  } catch(e) {
+    err.textContent = e.message || 'Could not create account.';
+    err.classList.add('show');
+    btn.innerHTML = 'Create account →'; btn.disabled = false;
+  }
+  btn.disabled = false;
+}
+
+async function sendReset() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const err   = document.getElementById('forgot-error');
+  const success = document.getElementById('forgot-success');
+  const btn   = document.getElementById('forgot-btn');
+  err.classList.remove('show'); success.classList.remove('show');
+
+  if (!email) { err.textContent = 'Please enter your email.'; err.classList.add('show'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+
+  if (!supabase) {
+    await new Promise(r => setTimeout(r, 600));
+    success.classList.add('show');
+    btn.innerHTML = 'Send reset link →'; btn.disabled = false;
+    return;
+  }
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+    success.classList.add('show');
+  } catch(e) {
+    err.textContent = e.message || 'Could not send reset email.';
+    err.classList.add('show');
+  }
+  btn.innerHTML = 'Send reset link →'; btn.disabled = false;
+}
+
+function skipAuth() {
+  state.demoMode = true;
+  const saved = localStorage.getItem('liverlo_name');
+  if (saved) { state.liverName = saved; enterApp(); }
+  else showOnboard();
+}
+
+async function loadOrCreateProfile(user) {
+  if (!supabase) return;
+  const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  if (data) {
+    state.liverName   = data.liver_name || 'Livvy';
+    state.health      = data.health     || 87;
+    state.streak      = data.streak     || 0;
+    state.monthSpend  = data.month_spend|| 0;
+    state.weekSpend   = data.week_spend || 0;
+    state.weekDrinks  = data.week_drinks|| 0;
+    state.todayDrinks = data.today_drinks||0;
+    enterApp();
+  } else {
+    // New user — show onboarding
+    showOnboard();
+  }
+}
+
+function onAuthSuccess(user) {
+  currentUser = user;
+  const saved = localStorage.getItem('liverlo_name');
+  if (saved) { state.liverName = saved; enterApp(); }
+  else showOnboard();
+}
+
+/* ═══════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════ */
+function showOnboard() {
+  document.querySelectorAll('.auth-screen, .screen, .onboard-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-onboard').classList.add('active');
+}
+
+function updateOnboardCharCount(input) {
+  document.getElementById('onboard-char-count').textContent = input.value.length + '/24';
+}
+
+function appendEmoji(e) {
+  const inp = document.getElementById('onboard-name-input');
+  if (inp.value.length < 22) inp.value += e;
+  updateOnboardCharCount(inp);
+}
+
+async function saveOnboardName() {
+  const val = document.getElementById('onboard-name-input').value.trim();
+  const name = val || 'Livvy';
+  state.liverName = name;
+  localStorage.setItem('liverlo_name', name);
+
+  if (supabase && currentUser && !SUPABASE_URL.includes('YOUR_PROJECT')) {
+    await supabase.from('profiles').upsert({
+      id: currentUser.id,
+      liver_name: name,
+      health: 87, streak: 0,
+      month_spend: 0, week_spend: 0,
+      week_drinks: 0, today_drinks: 0,
+      created_at: new Date().toISOString()
+    });
+  }
+  enterApp();
+}
+
+/* ═══════════════════════════════════════
+   ENTER MAIN APP
+═══════════════════════════════════════ */
+function enterApp() {
+  document.querySelectorAll('.auth-screen, .onboard-screen').forEach(s => { s.classList.remove('active'); s.style.display='none'; });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-home').classList.add('active');
+  document.getElementById('bottom-nav').style.display = 'flex';
+  updateUI();
+}
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const map = { 'screen-home':'nav-home','screen-log':'nav-log','screen-stats':'nav-stats','screen-badges':'nav-badges' };
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+}
+
+function showAuthScreen(id) {
+  document.querySelectorAll('.auth-screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+/* ═══════════════════════════════════════
+   DRINK LOGGING
+═══════════════════════════════════════ */
+function selectDrink(el) {
+  document.querySelectorAll('.drink-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedDrink = el.dataset.drink;
+  updateCostPreview();
+}
+
+function changeQty(d) {
+  state.qty = Math.max(1, Math.min(10, state.qty + d));
+  document.getElementById('qty-display').textContent = state.qty;
+  updateCostPreview();
+}
+
+function updateCostPreview() {
+  if (!state.selectedDrink) return;
+  const total = (state.sessionCost + drinks[state.selectedDrink].cost * state.qty).toFixed(1);
+  document.getElementById('cost-preview').textContent = '€' + total;
+}
+
+async function logDrink() {
+  if (!state.selectedDrink) { showToast('⚠️ Please select a drink first!'); return; }
+  const d = drinks[state.selectedDrink];
+  const units = d.units * state.qty;
+  const cost  = d.cost  * state.qty;
+
+  state.sessionCost += cost;
+  state.todayDrinks += state.qty;
+  state.weekDrinks  += state.qty;
+  state.weekSpend   += cost;
+  state.monthSpend  += cost;
+  state.health = Math.max(10, state.health - units * 3);
+
+  updateUI();
+
+  // Persist to Supabase
+  if (supabase && currentUser && !SUPABASE_URL.includes('YOUR_PROJECT')) {
+    await supabase.from('drink_logs').insert({
+      user_id:    currentUser.id,
+      drink_type: state.selectedDrink,
+      quantity:   state.qty,
+      units:      units,
+      cost:       cost,
+      logged_at:  new Date().toISOString()
+    });
+    await supabase.from('profiles').update({
+      health:       state.health,
+      week_drinks:  state.weekDrinks,
+      today_drinks: state.todayDrinks,
+      week_spend:   state.weekSpend,
+      month_spend:  state.monthSpend
+    }).eq('id', currentUser.id);
+  }
+
+  const m = getModal(units);
+  openModal(m.title, m.emoji, m.msg);
+
+  state.selectedDrink = null; state.qty = 1;
+  document.querySelectorAll('.drink-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('qty-display').textContent = '1';
+  document.getElementById('cost-preview').textContent = '€0';
+}
+
+function getModal(u) {
+  if (u <= 1.5) return { title: 'Great choice! 🌿', emoji: '💚', msg: 'Moderation makes it even better! ' + state.liverName + ' sends you a hug. 😘' };
+  if (u <= 3)   return { title: 'Logged! 📝',        emoji: '✅', msg: 'You\'re staying aware — good on you. Drink some water too! 💧' };
+  return { title: 'Whoa, that\'s a lot! 😅', emoji: '⚠️', msg: state.liverName + ' is feeling the heat... maybe some water tomorrow morning? 🙏' };
+}
+
+/* ═══════════════════════════════════════
+   LIVER NAME MODAL
+═══════════════════════════════════════ */
+function openNameModal() {
+  document.getElementById('name-modal-input').value = state.liverName;
+  document.getElementById('name-modal').classList.add('open');
+}
+function closeNameModal() {
+  document.getElementById('name-modal').classList.remove('open');
+}
+function appendEmojiModal(e) {
+  const inp = document.getElementById('name-modal-input');
+  if (inp.value.length < 22) inp.value += e;
+}
+function syncNameCount(input) {
+  // live preview
+  const preview = input.value.trim() || 'Livvy';
+  document.getElementById('liver-name').textContent = preview;
+}
+async function saveNameModal() {
+  const val = document.getElementById('name-modal-input').value.trim();
+  const name = val || 'Livvy';
+  state.liverName = name;
+  localStorage.setItem('liverlo_name', name);
+
+  if (supabase && currentUser && !SUPABASE_URL.includes('YOUR_PROJECT')) {
+    await supabase.from('profiles').update({ liver_name: name }).eq('id', currentUser.id);
+  }
+
+  document.getElementById('liver-name').textContent = name;
+  document.getElementById('insight-liver-name').textContent = name;
+  closeNameModal();
+  showToast('✅ Name saved!');
+}
+
+/* ═══════════════════════════════════════
+   UI UPDATE
+═══════════════════════════════════════ */
+const moods = [
+  { min:80, mood:'😍 Could literally fly right now!', color:'#4ade80', mouth:'M45 62 Q55 72 70 60' },
+  { min:60, mood:'😄 Feeling absolutely great!',      color:'#4ade80', mouth:'M50 60 Q55 67 65 60' },
+  { min:40, mood:'😐 Could be doing better…',        color:'#fbbf24', mouth:'M50 62 L65 62'        },
+  { min:20, mood:'😓 Needs some rest',                color:'#fb923c', mouth:'M50 65 Q55 58 65 63'  },
+  { min:0,  mood:'😰 Not feeling well at all!',       color:'#f87171', mouth:'M50 68 Q55 58 65 66'  },
+];
+
+function updateUI() {
+  const h = Math.round(state.health);
+  document.getElementById('health-pct').textContent = h + '%';
+  document.getElementById('health-fill').style.width = h + '%';
+  document.getElementById('stat-today').textContent  = state.todayDrinks;
+  document.getElementById('stat-week').textContent   = state.weekDrinks;
+  document.getElementById('stat-spend').textContent  = '€' + Math.round(state.weekSpend);
+  document.getElementById('monthly-spend').textContent = '€' + Math.round(state.monthSpend);
+  document.getElementById('liver-name').textContent     = state.liverName;
+  document.getElementById('insight-liver-name').textContent = state.liverName;
+
+  const m = moods.find(x => state.health >= x.min) || moods[moods.length-1];
+  document.getElementById('liver-mood').textContent = m.mood;
+  document.getElementById('liver-body').setAttribute('fill', m.color);
+  document.getElementById('liver-mouth').setAttribute('d', m.mouth);
+
+  const fill = document.getElementById('health-fill');
+  if      (state.health > 70) fill.style.background = 'linear-gradient(90deg,#4ade80,#86efac)';
+  else if (state.health > 40) fill.style.background = 'linear-gradient(90deg,#fbbf24,#fde68a)';
+  else                        fill.style.background = 'linear-gradient(90deg,#f87171,#fca5a5)';
+  document.getElementById('liver-svg').style.filter = `drop-shadow(0 8px 20px ${m.color}66)`;
+}
+
+/* ═══════════════════════════════════════
+   TOAST + MODAL HELPERS
+═══════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function openModal(title, emoji, msg) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-emoji').textContent = emoji;
+  document.getElementById('modal-msg').textContent   = msg;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  goTo('screen-home');
+  setTimeout(() => showToast('🎯 +XP earned!'), 300);
+}
+
+// Email auth — no OTP needed
+
+// Expose functions globally so inline onclick handlers can reach them
+window.skipAuth = skipAuth;
+window.signIn = signIn;
+window.signUp = signUp;
+window.sendReset = sendReset;
+window.showSignin = showSignin;
+window.showSignup = showSignup;
+window.showForgot = showForgot;
+window.selectDrink = selectDrink;
+window.changeQty = changeQty;
+window.logDrink = logDrink;
+window.goTo = goTo;
+window.closeModal = closeModal;
+window.openNameModal = openNameModal;
+window.closeNameModal = closeNameModal;
+window.saveNameModal = saveNameModal;
+window.appendEmojiModal = appendEmojiModal;
+window.syncNameCount = syncNameCount;
+window.appendEmoji = appendEmoji;
+window.updateOnboardCharCount = updateOnboardCharCount;
+window.saveOnboardName = saveOnboardName;
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
