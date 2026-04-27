@@ -833,7 +833,6 @@ async function enterAfterAuth(user) {
       state.weekSpend   = data.week_spend   || 0;
       state.weekDrinks  = data.week_drinks  || 0;
       state.todayDrinks = data.today_drinks || 0;
-      state.todayWater  = data.today_water  || 0;
       state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
       localStorage.setItem('liverlo_name', state.liverName);
       enterApp();
@@ -871,8 +870,7 @@ async function saveOnboardName() {
       month_spend:  0,
       week_spend:   0,
       week_drinks:  0,
-      today_drinks: 0,
-      today_water:  0
+      today_drinks: 0
     }, { onConflict: 'id' });
     if (error) console.warn('saveOnboardName error:', error.message, error.details, error.hint);
     else console.log('Profile created successfully for', currentUser.id);
@@ -999,8 +997,7 @@ async function logAllDrinks() {
       week_drinks:  state.weekDrinks,
       today_drinks: state.todayDrinks,
       week_spend:   state.weekSpend,
-      month_spend:  state.monthSpend,
-      today_water:  state.todayWater
+      month_spend:  state.monthSpend
     }, { onConflict: 'id' });
     if (profileErr) console.warn('Profile upsert error:', profileErr.message, profileErr.details);
 
