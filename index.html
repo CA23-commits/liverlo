@@ -372,7 +372,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
       <input class="auth-input" id="signup-password" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
       <input class="auth-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password">
       <div class="auth-error" id="signup-error"></div>
-      <div class="auth-success" id="signup-success">Check your email to confirm, then sign in.</div>
+      <div class="auth-success" id="signup-success">Account created! Signing you in...</div>
       <button class="auth-btn" id="signup-btn" onclick="signUp()">Create account</button>
       <div class="auth-toggle">Have an account? <span onclick="showSignin()">Sign in</span></div>
     </div>
@@ -746,10 +746,18 @@ async function signIn() {
   err.classList.remove('show');
   if (!email||!pass){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
   btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  if (!supabase){await delay(600);onAuthSuccess({id:'demo',email});btn.innerHTML='Sign in';btn.disabled=false;return;}
-  try{const{data,error}=await supabase.auth.signInWithPassword({email,password:pass});if(error)throw error;currentUser=data.user;await loadOrCreateProfile(currentUser);}
-  catch(e){err.textContent=e.message||'Invalid email or password.';err.classList.add('show');}
-  btn.innerHTML='Sign in';btn.disabled=false;
+  if (!supabase){await delay(600);btn.innerHTML='Sign in';btn.disabled=false;onAuthSuccess({id:'demo',email});return;}
+  try {
+    const{data,error}=await supabase.auth.signInWithPassword({email,password:pass});
+    if(error) throw error;
+    currentUser=data.user;
+    btn.innerHTML='Sign in';btn.disabled=false;
+    await loadOrCreateProfile(currentUser);
+  } catch(e) {
+    err.textContent=e.message||'Invalid email or password.';
+    err.classList.add('show');
+    btn.innerHTML='Sign in';btn.disabled=false;
+  }
 }
 
 async function signUp() {
@@ -760,10 +768,22 @@ async function signUp() {
   if (pass.length<6){err.textContent='Password must be at least 6 characters.';err.classList.add('show');return;}
   if (pass!==confirm){err.textContent='Passwords do not match.';err.classList.add('show');return;}
   btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  if (!supabase){await delay(600);success.classList.add('show');btn.innerHTML='Create account';btn.disabled=false;return;}
-  try{const{error}=await supabase.auth.signUp({email,password:pass});if(error)throw error;success.classList.add('show');btn.textContent='Email sent!';}
-  catch(e){err.textContent=e.message||'Could not create account.';err.classList.add('show');btn.innerHTML='Create account';}
-  btn.disabled=false;
+  if (!supabase){await delay(600);btn.innerHTML='Create account';btn.disabled=false;onAuthSuccess({id:'demo',email});return;}
+  try {
+    // Sign up (email confirmation disabled in Supabase dashboard)
+    const{data:signUpData, error:signUpError}=await supabase.auth.signUp({email,password:pass});
+    if(signUpError) throw signUpError;
+    // Immediately sign in — works when email confirmation is disabled
+    const{data:signInData, error:signInError}=await supabase.auth.signInWithPassword({email,password:pass});
+    if(signInError) throw signInError;
+    currentUser=signInData.user;
+    btn.innerHTML='Create account';btn.disabled=false;
+    await loadOrCreateProfile(currentUser);
+  } catch(e) {
+    err.textContent=e.message||'Could not create account.';
+    err.classList.add('show');
+    btn.innerHTML='Create account';btn.disabled=false;
+  }
 }
 
 async function sendReset() {
@@ -792,17 +812,26 @@ async function handleSignOut(){
 
 function onAuthSuccess(user){currentUser=user;const saved=localStorage.getItem('liverlo_name');if(saved){state.liverName=saved;enterApp();}else showOnboard();}
 
+let _loadingProfile = false;
 async function loadOrCreateProfile(user){
-  if(!supabase)return;
-  const{data}=await supabase.from('profiles').select('*').eq('id',user.id).single();
-  if(data){
-    state.liverName=data.liver_name||'Livvy';state.health=data.health||100;
-    state.monthSpend=data.month_spend||0;state.weekSpend=data.week_spend||0;
-    state.weekDrinks=data.week_drinks||0;state.todayDrinks=data.today_drinks||0;
-    state.todayWater=data.today_water||0;
-    state.hasLogs=state.todayDrinks>0||state.weekDrinks>0;
-    enterApp();
-  } else showOnboard();
+  if(!supabase||_loadingProfile)return;
+  _loadingProfile = true;
+  try {
+    const{data}=await supabase.from('profiles').select('*').eq('id',user.id).single();
+    if(data){
+      state.liverName=data.liver_name||'Livvy';state.health=data.health||100;
+      state.monthSpend=data.month_spend||0;state.weekSpend=data.week_spend||0;
+      state.weekDrinks=data.week_drinks||0;state.todayDrinks=data.today_drinks||0;
+      state.todayWater=data.today_water||0;
+      state.hasLogs=state.todayDrinks>0||state.weekDrinks>0;
+      enterApp();
+    } else showOnboard();
+  } catch(e) {
+    console.warn('loadOrCreateProfile error', e);
+    showOnboard();
+  } finally {
+    _loadingProfile = false;
+  }
 }
 
 /* ONBOARDING */
