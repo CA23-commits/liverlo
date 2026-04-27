@@ -814,63 +814,68 @@ async function handleSignOut(){
   showSignin();
 }
 
-// Called after successful sign-in — loads profile then enters app
+// Called after successful sign-in — fetches profile from DB, enters app or onboards
 async function enterAfterAuth(user) {
-  if (user && supabase) {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (data && !error) {
-        state.liverName   = data.liver_name   || 'Livvy';
-        state.health      = data.health       || 100;
-        state.monthSpend  = data.month_spend  || 0;
-        state.weekSpend   = data.week_spend   || 0;
-        state.weekDrinks  = data.week_drinks  || 0;
-        state.todayDrinks = data.today_drinks || 0;
-        state.todayWater  = data.today_water  || 0;
-        state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
-        const saved = localStorage.getItem('liverlo_name');
-        if (saved) state.liverName = saved;
-        enterApp();
-        return;
-      }
-      // Profile row missing — new user or first login after schema setup
-      console.log('No profile found, going to onboarding');
-    } catch(e) {
-      console.warn('Profile fetch error:', e.message);
+  if (!user || !supabase) { enterApp(); return; }
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle(); // returns null (not error) if row missing
+
+    if (data) {
+      // Existing user — load their data from DB (DB is source of truth)
+      state.liverName   = data.liver_name   || 'Livvy';
+      state.health      = data.health       || 100;
+      state.monthSpend  = data.month_spend  || 0;
+      state.weekSpend   = data.week_spend   || 0;
+      state.weekDrinks  = data.week_drinks  || 0;
+      state.todayDrinks = data.today_drinks || 0;
+      state.todayWater  = data.today_water  || 0;
+      state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
+      localStorage.setItem('liverlo_name', state.liverName);
+      enterApp();
+    } else {
+      // New user — no profile row yet, go to onboarding
+      showOnboard();
     }
-  }
-  // No profile found — check localStorage
-  const saved = localStorage.getItem('liverlo_name');
-  if (saved) {
-    state.liverName = saved;
-    // Try to create profile row silently
-    if (user && supabase) {
-      await supabase.from('profiles').upsert({
-        id: user.id, liver_name: saved, health: 100,
-        month_spend: 0, week_spend: 0, week_drinks: 0,
-        today_drinks: 0, today_water: 0
-      });
-    }
-    enterApp();
-  } else {
-    showOnboard();
+  } catch(e) {
+    console.warn('enterAfterAuth error:', e.message);
+    // DB unreachable — fall back to localStorage
+    const saved = localStorage.getItem('liverlo_name');
+    if (saved) { state.liverName = saved; enterApp(); }
+    else showOnboard();
   }
 }
 
 /* ONBOARDING */
-function showOnboard(){document.querySelectorAll('.auth-screen,.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});document.getElementById('screen-onboard').classList.add('active');}
-function updateOnboardChar(input){document.getElementById('onboard-char').textContent=input.value.length+'/24';}
-function appendEmoji(e){const inp=document.getElementById('onboard-name-input');if(inp.value.length<22)inp.value+=e;updateOnboardChar(inp);}
-async function saveOnboardName(){
-  const name=document.getElementById('onboard-name-input').value.trim()||'Livvy';
-  state.liverName=name;localStorage.setItem('liverlo_name',name);
-  if(supabase&&currentUser){
-    const{error}=await supabase.from('profiles').upsert({
-      id:currentUser.id, liver_name:name, health:100,
-      month_spend:0, week_spend:0, week_drinks:0,
-      today_drinks:0, today_water:0
-    });
-    if(error) console.warn('Profile create error:', error.message);
+function showOnboard() {
+  document.querySelectorAll('.auth-screen,.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.getElementById('screen-onboard').classList.add('active');
+}
+function updateOnboardChar(input) { document.getElementById('onboard-char').textContent = input.value.length + '/24'; }
+function appendEmoji(e) { const inp = document.getElementById('onboard-name-input'); if (inp.value.length < 22) inp.value += e; updateOnboardChar(inp); }
+
+async function saveOnboardName() {
+  const name = document.getElementById('onboard-name-input').value.trim() || 'Livvy';
+  state.liverName = name;
+  localStorage.setItem('liverlo_name', name);
+
+  if (supabase && currentUser) {
+    const { error } = await supabase.from('profiles').upsert({
+      id:           currentUser.id,
+      liver_name:   name,
+      health:       100,
+      month_spend:  0,
+      week_spend:   0,
+      week_drinks:  0,
+      today_drinks: 0,
+      today_water:  0
+    }, { onConflict: 'id' });
+    if (error) console.warn('saveOnboardName error:', error.message, error.details, error.hint);
+    else console.log('Profile created successfully for', currentUser.id);
   }
   enterApp();
 }
@@ -983,31 +988,34 @@ async function logAllDrinks() {
   }
 
   if (supabase && currentUser) {
-    // Upsert profile first (ensures row exists before inserting drink_logs)
-    const profilePayload = {
-      id: currentUser.id,
-      liver_name: state.liverName,
-      health: state.health,
-      week_drinks: state.weekDrinks,
-      today_drinks: state.todayDrinks,
-      week_spend: state.weekSpend,
-      month_spend: state.monthSpend,
-      today_water: state.todayWater
-    };
-    const { error: profileErr } = await supabase.from('profiles').upsert(profilePayload);
-    if (profileErr) console.warn('Profile upsert error:', profileErr.message);
+    // 1. Snapshot basket before it gets cleared below
+    const basketSnapshot = { ...basket };
 
-    // Now insert drink logs
-    const logRows = Object.keys(basket).map(k => ({
+    // 2. Upsert profile (update stats — row must exist from onboarding)
+    const { error: profileErr } = await supabase.from('profiles').upsert({
+      id:           currentUser.id,
+      liver_name:   state.liverName,
+      health:       state.health,
+      week_drinks:  state.weekDrinks,
+      today_drinks: state.todayDrinks,
+      week_spend:   state.weekSpend,
+      month_spend:  state.monthSpend,
+      today_water:  state.todayWater
+    }, { onConflict: 'id' });
+    if (profileErr) console.warn('Profile upsert error:', profileErr.message, profileErr.details);
+
+    // 3. Insert one row per drink type using the snapshot
+    const logRows = Object.keys(basketSnapshot).map(k => ({
       user_id:    currentUser.id,
       drink_type: k,
-      quantity:   basket[k],
-      units:      drinkData[k].units * basket[k],
-      cost:       drinkData[k].cost  * basket[k],
+      quantity:   basketSnapshot[k],
+      units:      drinkData[k].units * basketSnapshot[k],
+      cost:       drinkData[k].cost  * basketSnapshot[k],
       logged_at:  new Date().toISOString()
     }));
     const { error: logErr } = await supabase.from('drink_logs').insert(logRows);
-    if (logErr) console.warn('Drink log insert error:', logErr.message);
+    if (logErr) console.warn('Drink log insert error:', logErr.message, logErr.details, logErr.hint);
+    else console.log('Logged', logRows.length, 'drink(s) to Supabase');
   }
 
   updateUI(); buildWeekStrip(); buildBarChart();
