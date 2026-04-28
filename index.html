@@ -104,8 +104,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .health-pct { font-family: 'Fraunces', serif; font-size: 38px; font-weight: 300; color: var(--green); letter-spacing: -1px; line-height: 1; }
 .health-pct-label { font-size: 11px; color: var(--text-3); font-weight: 500; margin-top: 2px; text-align: right; }
 .liver-visual { display: flex; justify-content: center; margin: 12px 0; }
-.liver-svg-el { width: 110px; height: 92px; filter: drop-shadow(0 6px 18px rgba(45,106,79,0.2)); animation: gentlepulse 3s ease-in-out infinite; }
-@keyframes gentlepulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.03);} }
+/* liver-svg-el now defined in enhanced animation section */
+
 .health-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); font-weight: 500; margin-bottom: 8px; }
 .health-bar { height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
 .health-fill { height: 100%; background: var(--green); border-radius: 999px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
@@ -253,6 +253,111 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 /* SPINNER */
 .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ENHANCED LIVER ANIMATION */
+.liver-svg-el {
+  width: 110px; height: 92px;
+  filter: drop-shadow(0 6px 18px rgba(45,106,79,0.2));
+  animation: liverbounce 3s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+@keyframes liverbounce {
+  0%   { transform: translateY(0px) rotate(-1deg) scale(1); }
+  20%  { transform: translateY(-6px) rotate(1deg) scale(1.03); }
+  40%  { transform: translateY(-2px) rotate(-0.5deg) scale(1.01); }
+  60%  { transform: translateY(-5px) rotate(1.5deg) scale(1.035); }
+  80%  { transform: translateY(-1px) rotate(-0.3deg) scale(1.005); }
+  100% { transform: translateY(0px) rotate(-1deg) scale(1); }
+}
+#liver-svg circle[cx="44"], #liver-svg circle[cx="70"] {
+  animation: eyeblink 5s ease-in-out infinite;
+}
+@keyframes eyeblink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+/* MILESTONE NOTIFICATION DOT */
+.nav-badge {
+  position: absolute; top: 2px; right: 14px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #e53e3e; border: 1.5px solid #fff;
+  display: none;
+}
+.nav-badge.show { display: block; }
+.nav-btn { position: relative; }
+
+/* CALENDAR */
+.cal-card {
+  margin: 0 16px 14px; background: var(--white);
+  border-radius: var(--radius); padding: 18px;
+  border: 1px solid var(--border);
+}
+.cal-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+}
+.cal-month { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; letter-spacing: -0.3px; }
+.cal-nav {
+  background: none; border: 1.5px solid var(--border); border-radius: 8px;
+  width: 32px; height: 32px; cursor: pointer; font-size: 14px; color: var(--text-2);
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.cal-nav:hover { border-color: var(--green); color: var(--green); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-day-name {
+  text-align: center; font-size: 9px; font-weight: 700;
+  color: var(--text-4); text-transform: uppercase; letter-spacing: 0.5px;
+  padding-bottom: 6px;
+}
+.cal-day {
+  aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: default;
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  position: relative; gap: 2px;
+}
+.cal-day.empty { background: none; }
+.cal-day.future { color: var(--text-4); }
+.cal-day.today { box-shadow: 0 0 0 2px var(--green); border-radius: 8px; }
+.cal-day.score-great { background: #d8f3dc; color: #1b4332; }
+.cal-day.score-good  { background: #e9f5ee; color: #2d6a4f; }
+.cal-day.score-warn  { background: #fefbe6; color: #7a5f00; }
+.cal-day.score-bad   { background: #fdecea; color: #7f1d1d; }
+.cal-day.no-log      { background: var(--surface2); color: var(--text-4); }
+.cal-dot {
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+}
+.cal-legend {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;
+  padding-top: 12px; border-top: 1px solid var(--border-light);
+}
+.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: var(--text-3); }
+.cal-legend-swatch { width: 10px; height: 10px; border-radius: 3px; }
+.cal-tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--text); color: #fff; padding: 5px 8px; border-radius: 8px;
+  font-size: 10px; white-space: nowrap; z-index: 50; pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+}
+.cal-day:hover .cal-tooltip { opacity: 1; }
+
+/* MILESTONE UNLOCK MODAL */
+.milestone-modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  z-index: 400; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.milestone-modal-overlay.open { display: flex; animation: fadeUp 0.2s ease; }
+.milestone-modal-sheet {
+  background: var(--white); border-radius: 20px 20px 0 0;
+  padding: 28px 24px 36px; width: 100%; max-width: 430px;
+  animation: slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  text-align: center;
+}
+.milestone-badge-icon { font-size: 56px; margin-bottom: 10px; display: block; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
+@keyframes popIn { from { transform: scale(0) rotate(-10deg); } to { transform: scale(1) rotate(0); } }
+.milestone-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; margin-bottom: 6px; letter-spacing: -0.3px; }
+.milestone-sub { font-size: 14px; color: var(--text-3); margin-bottom: 24px; line-height: 1.5; }
+.milestone-close { width: 100%; background: var(--green); color: #fff; border: none; padding: 14px; border-radius: var(--radius-sm); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -353,38 +458,13 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     <div class="auth-logo">Liver<span>lo</span></div>
     <div class="auth-tagline">Understand your liver. Feel better.</div>
 
-    <div id="panel-signin">
-      <div class="auth-panel-title">Welcome back</div>
-      <div class="auth-panel-sub">Sign in to continue your journey.</div>
-      <input class="auth-input" id="signin-email" type="email" placeholder="Email address" autocomplete="email">
-      <input class="auth-input" id="signin-password" type="password" placeholder="Password" autocomplete="current-password">
-      <div class="forgot-link" onclick="showForgot()">Forgot password?</div>
-      <div class="auth-error" id="signin-error"></div>
-      <button class="auth-btn" id="signin-btn" onclick="signIn()">Sign in</button>
-      <div class="auth-toggle">No account? <span onclick="showSignup()">Create one</span></div>
+    <div id="panel-email">
+      <div class="auth-panel-title">Enter your email</div>
+      <div class="auth-panel-sub">New here? We'll create your profile. Already have one? We'll load it right up.</div>
+      <input class="auth-input" id="email-input" type="email" placeholder="your@email.com" autocomplete="email">
+      <div class="auth-error" id="email-error"></div>
+      <button class="auth-btn" id="email-btn" onclick="handleEmail()">Continue →</button>
       <div class="demo-link" onclick="skipAuth()">Continue without account</div>
-    </div>
-
-    <div id="panel-signup" style="display:none">
-      <div class="auth-panel-title">Create account</div>
-      <div class="auth-panel-sub">Start tracking your wellbeing today.</div>
-      <input class="auth-input" id="signup-email" type="email" placeholder="Email address" autocomplete="email">
-      <input class="auth-input" id="signup-password" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
-      <input class="auth-input" id="signup-confirm" type="password" placeholder="Confirm password" autocomplete="new-password">
-      <div class="auth-error" id="signup-error"></div>
-      <div class="auth-success" id="signup-success">Account created! Signing you in...</div>
-      <button class="auth-btn" id="signup-btn" onclick="signUp()">Create account</button>
-      <div class="auth-toggle">Have an account? <span onclick="showSignin()">Sign in</span></div>
-    </div>
-
-    <div id="panel-forgot" style="display:none">
-      <div class="auth-panel-title">Reset password</div>
-      <div class="auth-panel-sub">We'll send a reset link to your email.</div>
-      <input class="auth-input" id="forgot-email" type="email" placeholder="Email address" autocomplete="email">
-      <div class="auth-error" id="forgot-error"></div>
-      <div class="auth-success" id="forgot-success">Reset link sent! Check your inbox.</div>
-      <button class="auth-btn" id="forgot-btn" onclick="sendReset()">Send reset link</button>
-      <button class="auth-back" onclick="showSignin()">← Back to sign in</button>
     </div>
   </div>
 </div>
@@ -639,11 +719,36 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   <div style="height:16px"></div>
 </div>
 
+<!-- CALENDAR SCREEN -->
+<div class="screen" id="screen-calendar">
+  <div class="topbar"><div class="topbar-logo">Liver<span>lo</span></div></div>
+  <div class="section-head" style="padding-top:16px">Health calendar</div>
+  <div class="cal-card">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <div class="cal-month" id="cal-month-label">April 2026</div>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-legend">
+      <div class="cal-legend-item"><div class="cal-legend-swatch" style="background:#d8f3dc"></div>Great (≥90%)</div>
+      <div class="cal-legend-item"><div class="cal-legend-swatch" style="background:#e9f5ee"></div>Good (≥70%)</div>
+      <div class="cal-legend-item"><div class="cal-legend-swatch" style="background:#fefbe6"></div>Watch out</div>
+      <div class="cal-legend-item"><div class="cal-legend-swatch" style="background:#fdecea"></div>Rough day</div>
+      <div class="cal-legend-item"><div class="cal-legend-swatch" style="background:var(--surface2)"></div>No log</div>
+    </div>
+  </div>
+</div>
+
 <!-- NAV -->
 <nav class="bottom-nav" id="bottom-nav" style="display:none">
-  <button class="nav-btn active" id="nav-home"   onclick="goTo('screen-home')"><span class="nav-icon">🫀</span><span>Home</span></button>
-  <button class="nav-btn"        id="nav-log"    onclick="goTo('screen-log')"><span class="nav-icon">＋</span><span>Log</span></button>
-  <button class="nav-btn"        id="nav-badges" onclick="goTo('screen-badges')"><span class="nav-icon">🏅</span><span>Milestones</span></button>
+  <button class="nav-btn active" id="nav-home"     onclick="goTo('screen-home')"><span class="nav-icon">🫀</span><span>Home</span></button>
+  <button class="nav-btn"        id="nav-log"      onclick="goTo('screen-log')"><span class="nav-icon">＋</span><span>Log</span></button>
+  <button class="nav-btn"        id="nav-calendar" onclick="goTo('screen-calendar')"><span class="nav-icon">📅</span><span>History</span></button>
+  <button class="nav-btn"        id="nav-badges"   onclick="goTo('screen-badges')">
+    <span class="nav-icon">🏅</span><span>Milestones</span>
+    <span class="nav-badge" id="milestone-dot"></span>
+  </button>
 </nav>
 
 <div class="toast" id="toast">Logged</div>
@@ -676,6 +781,17 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
     </div>
     <button class="name-save-btn" onclick="saveNameModal()">Save</button>
     <button class="name-cancel-btn" onclick="closeNameModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- MILESTONE UNLOCK MODAL -->
+<div class="milestone-modal-overlay" id="milestone-modal">
+  <div class="milestone-modal-sheet">
+    <div class="modal-pill" style="margin-bottom:16px"></div>
+    <span class="milestone-badge-icon" id="ms-icon">🏅</span>
+    <div class="milestone-title" id="ms-title">Milestone unlocked!</div>
+    <div class="milestone-sub" id="ms-sub">You did something great.</div>
+    <button class="milestone-close" onclick="closeMilestoneModal()">View my milestones →</button>
   </div>
 </div>
 
@@ -729,124 +845,155 @@ const facts = [
   'After stopping drinking, most people notice better sleep, clearer skin, and improved mood within 2 weeks.',
 ];
 
-/* AUTH */
-function showSignin() { document.getElementById('panel-signin').style.display='block'; document.getElementById('panel-signup').style.display='none'; document.getElementById('panel-forgot').style.display='none'; }
-function showSignup() { document.getElementById('panel-signin').style.display='none'; document.getElementById('panel-signup').style.display='block'; document.getElementById('panel-forgot').style.display='none'; }
-function showForgot() { document.getElementById('panel-signin').style.display='none'; document.getElementById('panel-forgot').style.display='block'; }
-
-async function signIn() {
-  const email = document.getElementById('signin-email').value.trim();
-  const pass  = document.getElementById('signin-password').value;
-  const err   = document.getElementById('signin-error');
-  const btn   = document.getElementById('signin-btn');
+/* AUTH — email only, no password */
+async function handleEmail() {
+  const email = document.getElementById('email-input').value.trim().toLowerCase();
+  const err   = document.getElementById('email-error');
+  const btn   = document.getElementById('email-btn');
   err.classList.remove('show');
-  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
-  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
-  if (!supabase) { await delay(600); btn.innerHTML = 'Sign in'; btn.disabled = false; enterAfterAuth(null); return; }
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) throw error;
-    currentUser = data.user;
-    await enterAfterAuth(currentUser);
-  } catch(e) {
-    err.textContent = e.message || 'Invalid email or password.';
+
+  if (!email || !email.includes('@')) {
+    err.textContent = 'Please enter a valid email address.';
     err.classList.add('show');
+    return;
   }
-  btn.innerHTML = 'Sign in'; btn.disabled = false;
-}
 
-async function signUp() {
-  const email   = document.getElementById('signup-email').value.trim();
-  const pass    = document.getElementById('signup-password').value;
-  const confirm = document.getElementById('signup-confirm').value;
-  const err     = document.getElementById('signup-error');
-  const btn     = document.getElementById('signup-btn');
-  err.classList.remove('show');
-  if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return; }
-  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.add('show'); return; }
-  if (pass !== confirm) { err.textContent = 'Passwords do not match.'; err.classList.add('show'); return; }
   btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
-  if (!supabase) { await delay(600); btn.innerHTML = 'Create account'; btn.disabled = false; showOnboard(); return; }
-  try {
-    const { data, error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) throw error;
-    // signUp returns a session immediately when email confirmation is OFF
-    if (data.session) {
-      currentUser = data.user;
-      btn.innerHTML = 'Create account'; btn.disabled = false;
-      showOnboard();
-    } else {
-      // Confirmation still on — fall back to sign in
-      const { data: d2, error: e2 } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (e2) throw e2;
-      currentUser = d2.user;
-      btn.innerHTML = 'Create account'; btn.disabled = false;
-      showOnboard();
-    }
-  } catch(e) {
-    err.textContent = e.message || 'Could not create account.';
-    err.classList.add('show');
-    btn.innerHTML = 'Create account'; btn.disabled = false;
-  }
-}
 
-async function sendReset() {
-  const email=document.getElementById('forgot-email').value.trim();
-  const err=document.getElementById('forgot-error'), success=document.getElementById('forgot-success'), btn=document.getElementById('forgot-btn');
-  err.classList.remove('show');success.classList.remove('show');
-  if (!email){err.textContent='Please enter your email.';err.classList.add('show');return;}
-  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  if (!supabase){await delay(600);success.classList.add('show');btn.innerHTML='Send reset link';btn.disabled=false;return;}
-  try{const{error}=await supabase.auth.resetPasswordForEmail(email);if(error)throw error;success.classList.add('show');}
-  catch(e){err.textContent=e.message||'Could not send reset email.';err.classList.add('show');}
-  btn.innerHTML='Send reset link';btn.disabled=false;
-}
-
-function skipAuth(){state.demoMode=true;const saved=localStorage.getItem('liverlo_name');if(saved){state.liverName=saved;enterApp();}else showOnboard();}
-
-async function handleSignOut(){
-  if(supabase&&!state.demoMode)await supabase.auth.signOut();
-  currentUser=null;
-  state={health:100,todayDrinks:0,todayWater:0,weekDrinks:0,weekSpend:0,monthSpend:0,liverName:'Livvy',weekLog:Array(7).fill(null).map(()=>({units:0})),selectedDrink:null,qty:1,sessionCost:0,demoMode:false,hasLogs:false};
-  document.getElementById('bottom-nav').style.display='none';
-  document.querySelectorAll('.screen,.onboard-screen').forEach(s=>{s.classList.remove('active');s.style.display='';});
-  document.getElementById('screen-auth').classList.add('active');
-  showSignin();
-}
-
-// Called after successful sign-in — fetches profile from DB, enters app or onboards
-async function enterAfterAuth(user) {
-  if (!user || !supabase) { enterApp(); return; }
-
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle(); // returns null (not error) if row missing
-
-    if (data) {
-      // Existing user — load their data from DB (DB is source of truth)
-      state.liverName   = data.liver_name   || 'Livvy';
-      state.health      = data.health       || 100;
-      state.monthSpend  = data.month_spend  || 0;
-      state.weekSpend   = data.week_spend   || 0;
-      state.weekDrinks  = data.week_drinks  || 0;
-      state.todayDrinks = data.today_drinks || 0;
-      state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
-      localStorage.setItem('liverlo_name', state.liverName);
-      enterApp();
-    } else {
-      // New user — no profile row yet, go to onboarding
-      showOnboard();
-    }
-  } catch(e) {
-    console.warn('enterAfterAuth error:', e.message);
-    // DB unreachable — fall back to localStorage
+  if (!supabase) {
+    await delay(600);
+    btn.innerHTML = 'Continue →'; btn.disabled = false;
+    // Demo mode: check localStorage
     const saved = localStorage.getItem('liverlo_name');
+    state.userEmail = email;
     if (saved) { state.liverName = saved; enterApp(); }
     else showOnboard();
+    return;
   }
+
+  try {
+    // Look up profile by email in our profiles table
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (profile) {
+      // Returning user — load their data
+      currentUser = { id: profile.id, email };
+      state.liverName   = profile.liver_name   || 'Livvy';
+      state.health      = profile.health       || 100;
+      state.monthSpend  = profile.month_spend  || 0;
+      state.weekSpend   = profile.week_spend   || 0;
+      state.weekDrinks  = profile.week_drinks  || 0;
+      state.todayDrinks = profile.today_drinks || 0;
+      state.todayWater  = profile.today_water  || 0;
+      state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
+      state.userEmail   = email;
+      localStorage.setItem('liverlo_email', email);
+      localStorage.setItem('liverlo_name', state.liverName);
+      // Restore milestones from DB
+      if (profile.milestones && profile.milestones.length > 0) {
+        unlockedMilestones = new Set(profile.milestones);
+        localStorage.setItem('liverlo_milestones', JSON.stringify(profile.milestones));
+      }
+      await loadCalLogFromDB(profile.id);
+      btn.innerHTML = 'Continue →'; btn.disabled = false;
+      enterApp();
+    } else {
+      // New user — go to onboarding, profile created in saveOnboardName
+      state.userEmail = email;
+      localStorage.setItem('liverlo_email', email);
+      btn.innerHTML = 'Continue →'; btn.disabled = false;
+      showOnboard();
+    }
+  } catch(e) {
+    err.textContent = 'Something went wrong. Please try again.';
+    err.classList.add('show');
+    console.warn('handleEmail error:', e.message);
+    btn.innerHTML = 'Continue →'; btn.disabled = false;
+  }
+}
+
+// Allow pressing Enter on email input
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('email-input');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') handleEmail(); });
+}, { once: false });
+
+function skipAuth() {
+  state.demoMode = true;
+  const saved = localStorage.getItem('liverlo_name');
+  if (saved) { state.liverName = saved; enterApp(); }
+  else showOnboard();
+}
+
+async function handleSignOut() {
+  currentUser = null;
+  localStorage.removeItem('liverlo_email');
+  state = {
+    health:100, todayDrinks:0, todayWater:0, weekDrinks:0,
+    weekSpend:0, monthSpend:0, liverName:'Livvy',
+    weekLog:Array(7).fill(null).map(()=>({units:0})),
+    selectedDrink:null, qty:1, sessionCost:0, demoMode:false, hasLogs:false
+  };
+  document.getElementById('bottom-nav').style.display = 'none';
+  document.querySelectorAll('.screen,.onboard-screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  document.getElementById('screen-auth').classList.add('active');
+}
+
+// Auto-login from localStorage email on page load
+async function tryAutoLogin() {
+  const savedEmail = localStorage.getItem('liverlo_email');
+  if (!savedEmail || !supabase) return false;
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', savedEmail)
+      .maybeSingle();
+    if (profile) {
+      currentUser       = { id: profile.id, email: savedEmail };
+      state.liverName   = profile.liver_name   || 'Livvy';
+      state.health      = profile.health       || 100;
+      state.monthSpend  = profile.month_spend  || 0;
+      state.weekSpend   = profile.week_spend   || 0;
+      state.weekDrinks  = profile.week_drinks  || 0;
+      state.todayDrinks = profile.today_drinks || 0;
+      state.todayWater  = profile.today_water  || 0;
+      state.hasLogs     = state.todayDrinks > 0 || state.weekDrinks > 0;
+      state.userEmail   = savedEmail;
+      // Restore milestones from DB
+      if (profile.milestones && profile.milestones.length > 0) {
+        unlockedMilestones = new Set(profile.milestones);
+        localStorage.setItem('liverlo_milestones', JSON.stringify(profile.milestones));
+      }
+      // Load calendar from DB
+      await loadCalLogFromDB(profile.id);
+      enterApp();
+      return true;
+    }
+  } catch(e) { console.warn('Auto-login failed:', e.message); }
+  return false;
+}
+
+// Also load handleEmail to pull milestones + calendar on email login
+async function loadCalLogFromDB(userId) {
+  if (!supabase || !userId) return;
+  try {
+    const { data: rows } = await supabase
+      .from('daily_health_log')
+      .select('log_date, health, units')
+      .eq('user_id', userId)
+      .order('log_date', { ascending: true });
+    if (rows && rows.length > 0) {
+      rows.forEach(r => {
+        calLog[r.log_date] = { health: r.health, units: parseFloat(r.units) || 0 };
+      });
+      localStorage.setItem('liverlo_callog', JSON.stringify(calLog));
+    }
+  } catch(e) { console.warn('loadCalLogFromDB error:', e.message); }
 }
 
 /* ONBOARDING */
@@ -857,43 +1004,193 @@ function showOnboard() {
 function updateOnboardChar(input) { document.getElementById('onboard-char').textContent = input.value.length + '/24'; }
 function appendEmoji(e) { const inp = document.getElementById('onboard-name-input'); if (inp.value.length < 22) inp.value += e; updateOnboardChar(inp); }
 
+// Deterministic UUID from email using SHA-256
+async function emailToUUID(email) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('liverlo:' + email.toLowerCase()));
+  const h = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;
+}
+
 async function saveOnboardName() {
   const name = document.getElementById('onboard-name-input').value.trim() || 'Livvy';
   state.liverName = name;
   localStorage.setItem('liverlo_name', name);
 
-  if (supabase && currentUser) {
+  const email = state.userEmail || localStorage.getItem('liverlo_email') || '';
+  if (supabase && email) {
+    const profileId = currentUser ? currentUser.id : await emailToUUID(email);
+    currentUser = { id: profileId, email };
     const { error } = await supabase.from('profiles').upsert({
-      id:           currentUser.id,
+      id:           profileId,
+      email:        email,
       liver_name:   name,
       health:       100,
       month_spend:  0,
       week_spend:   0,
       week_drinks:  0,
-      today_drinks: 0
-    }, { onConflict: 'id' });
-    if (error) console.warn('saveOnboardName error:', error.message, error.details, error.hint);
-    else console.log('Profile created successfully for', currentUser.id);
+      today_drinks: 0,
+      today_water:  0,
+      milestones:   []
+    }, { onConflict: 'email' });
+    if (error) console.warn('saveOnboardName error:', error.message, error.details);
+    else console.log('Profile created for', email);
   }
   enterApp();
 }
 
+/* CALENDAR */
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calLog = {};
+
+/* MILESTONES */
+const MILESTONES = [
+  { id:'first_log',   icon:'🌱', name:'First log',   desc:'You logged your first drink. Awareness is the first step.',   check: s => s.hasLogs },
+  { id:'hydrated',    icon:'💧', name:'Hydrated',     desc:'8 glasses of water in a day. Your liver loves you.',         check: s => s.todayWater >= 8 },
+  { id:'sober_night', icon:'🌙', name:'Sober night',  desc:'A night out with no alcohol. Genuinely impressive.',         check: s => s.todayDrinks === 0 && s.hasLogs },
+  { id:'week_ok',     icon:'⭐', name:'Full week',    desc:'7 days within safe limits. Consistency is everything.',      check: s => s.weekDrinks <= 14 && s.weekDrinks > 0 },
+  { id:'save_50',     icon:'💰', name:'€50 saved',    desc:'You saved €50 that could have gone to alcohol. Well done.',  check: s => s.monthSpend === 0 && s.weekSpend === 0 && s.hasLogs },
+  { id:'health_90',   icon:'🫀', name:'90% health',   desc:'Your health score is above 90%. Keep this going.',           check: s => s.health >= 90 },
+];
+let unlockedMilestones = new Set(JSON.parse(localStorage.getItem('liverlo_milestones') || '[]'));
+let pendingMilestoneQueue = [];
+
+function checkMilestones() {
+  const newlyUnlocked = [];
+  MILESTONES.forEach(m => {
+    if (!unlockedMilestones.has(m.id) && m.check(state)) {
+      unlockedMilestones.add(m.id);
+      newlyUnlocked.push(m);
+    }
+  });
+  if (newlyUnlocked.length > 0) {
+    localStorage.setItem('liverlo_milestones', JSON.stringify([...unlockedMilestones]));
+    pendingMilestoneQueue.push(...newlyUnlocked);
+    document.getElementById('milestone-dot').classList.add('show');
+    showNextMilestoneModal();
+  }
+}
+
+function showNextMilestoneModal() {
+  if (pendingMilestoneQueue.length === 0) return;
+  const m = pendingMilestoneQueue.shift();
+  document.getElementById('ms-icon').textContent  = m.icon;
+  document.getElementById('ms-title').textContent = m.name + ' unlocked!';
+  document.getElementById('ms-sub').textContent   = m.desc;
+  document.getElementById('milestone-modal').classList.add('open');
+}
+
+function closeMilestoneModal() {
+  document.getElementById('milestone-modal').classList.remove('open');
+  if (pendingMilestoneQueue.length > 0) {
+    setTimeout(showNextMilestoneModal, 300);
+  } else {
+    goTo('screen-badges');
+    document.getElementById('milestone-dot').classList.remove('show');
+  }
+}
+
+function recordTodayToCalLog() {
+  const key = new Date().toISOString().slice(0,10);
+  const todayIdx = new Date().getDay()===0?6:new Date().getDay()-1;
+  calLog[key] = { health: Math.round(state.health), units: state.weekLog[todayIdx].units || 0 };
+  localStorage.setItem('liverlo_callog', JSON.stringify(calLog));
+}
+
+function loadCalLog() {
+  try { calLog = JSON.parse(localStorage.getItem('liverlo_callog') || '{}'); } catch(e) { calLog = {}; }
+}
+
+function buildCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = months[calMonth] + ' ' + calYear;
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let gridHTML = dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+  for (let i = 0; i < startOffset; i++) gridHTML += `<div class="cal-day empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday  = dateStr === todayStr;
+    const cellDate = new Date(calYear, calMonth, d);
+    const isFuture = cellDate > todayDate;
+    const entry    = calLog[dateStr];
+
+    let cls = 'cal-day'; let dotColor = ''; let tooltip = '';
+    if (isFuture) {
+      cls += ' future';
+    } else if (entry) {
+      const h = entry.health;
+      if      (h >= 90) { cls += ' score-great'; dotColor = '#40916c'; }
+      else if (h >= 70) { cls += ' score-good';  dotColor = '#52b788'; }
+      else if (h >= 50) { cls += ' score-warn';  dotColor = '#f6c90e'; }
+      else              { cls += ' score-bad';   dotColor = '#e07070'; }
+      tooltip = h + '% health' + (entry.units > 0 ? ' · ' + entry.units + 'u' : '');
+    } else {
+      cls += ' no-log';
+    }
+    if (isToday) cls += ' today';
+
+    const dotHTML = dotColor ? `<div class="cal-dot" style="background:${dotColor}"></div>` : '';
+    const tipHTML = tooltip   ? `<div class="cal-tooltip">${tooltip}</div>` : '';
+    gridHTML += `<div class="${cls}">${tipHTML}<span>${d}</span>${dotHTML}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = gridHTML;
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  buildCalendar();
+}
+
+function updateBadgesScreen() {
+  const badgeMap = { 'first_log':0,'hydrated':1,'sober_night':2,'week_ok':4,'save_50':6,'health_90':7 };
+  const cards = document.querySelectorAll('.badge-card');
+  unlockedMilestones.forEach(id => {
+    const idx = badgeMap[id];
+    if (idx !== undefined && cards[idx]) {
+      cards[idx].classList.remove('locked');
+      cards[idx].classList.add('unlocked');
+    }
+  });
+}
+
 /* APP */
-function enterApp(){
+function enterApp() {
   document.querySelectorAll('.auth-screen,.onboard-screen').forEach(s=>{s.classList.remove('active');s.style.display='none';});
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-home').classList.add('active');
   document.getElementById('bottom-nav').style.display='flex';
+  loadCalLog();
+  recordTodayToCalLog();
+  buildCalendar();
   updateUI();buildWeekStrip();buildBarChart();rotateInsight();rotateFact();
+  updateBadgesScreen();
+  const seen = JSON.parse(localStorage.getItem('liverlo_milestones_seen') || '[]');
+  if ([...unlockedMilestones].some(m => !seen.includes(m))) {
+    document.getElementById('milestone-dot').classList.add('show');
+  }
 }
 
-function goTo(id){
+function goTo(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const map={'screen-home':'nav-home','screen-log':'nav-log','screen-badges':'nav-badges'};
-  if(map[id])document.getElementById(map[id]).classList.add('active');
-
+  const map={'screen-home':'nav-home','screen-log':'nav-log','screen-calendar':'nav-calendar','screen-badges':'nav-badges'};
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+  if (id === 'screen-calendar') buildCalendar();
+  if (id === 'screen-badges') {
+    document.getElementById('milestone-dot').classList.remove('show');
+    localStorage.setItem('liverlo_milestones_seen', JSON.stringify([...unlockedMilestones]));
+    updateBadgesScreen();
+  }
 }
 
 /* DRINK LOG — multi-select basket */
@@ -986,22 +1283,25 @@ async function logAllDrinks() {
   }
 
   if (supabase && currentUser) {
-    // 1. Snapshot basket before it gets cleared below
     const basketSnapshot = { ...basket };
+    const email = state.userEmail || localStorage.getItem('liverlo_email') || '';
 
-    // 2. Upsert profile (update stats — row must exist from onboarding)
+    // 1. Upsert profile stats + milestones
     const { error: profileErr } = await supabase.from('profiles').upsert({
       id:           currentUser.id,
+      email:        email,
       liver_name:   state.liverName,
-      health:       state.health,
+      health:       Math.round(state.health),
       week_drinks:  state.weekDrinks,
       today_drinks: state.todayDrinks,
+      today_water:  state.todayWater,
       week_spend:   state.weekSpend,
-      month_spend:  state.monthSpend
-    }, { onConflict: 'id' });
+      month_spend:  state.monthSpend,
+      milestones:   [...unlockedMilestones]
+    }, { onConflict: 'email' });
     if (profileErr) console.warn('Profile upsert error:', profileErr.message, profileErr.details);
 
-    // 3. Insert one row per drink type using the snapshot
+    // 2. Insert drink log rows
     const logRows = Object.keys(basketSnapshot).map(k => ({
       user_id:    currentUser.id,
       drink_type: k,
@@ -1011,8 +1311,18 @@ async function logAllDrinks() {
       logged_at:  new Date().toISOString()
     }));
     const { error: logErr } = await supabase.from('drink_logs').insert(logRows);
-    if (logErr) console.warn('Drink log insert error:', logErr.message, logErr.details, logErr.hint);
-    else console.log('Logged', logRows.length, 'drink(s) to Supabase');
+    if (logErr) console.warn('Drink log insert error:', logErr.message, logErr.details);
+    else console.log('Logged', logRows.length, 'drink(s) ✓');
+
+    // 3. Upsert daily health snapshot for calendar
+    const todayDate = new Date().toISOString().slice(0,10);
+    const todayUnits = state.weekLog[new Date().getDay()===0?6:new Date().getDay()-1].units || 0;
+    await supabase.rpc('upsert_daily_health', {
+      p_user_id: currentUser.id,
+      p_date:    todayDate,
+      p_health:  Math.round(state.health),
+      p_units:   todayUnits
+    });
   }
 
   updateUI(); buildWeekStrip(); buildBarChart();
@@ -1141,9 +1451,8 @@ async function saveNameModal(){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
-window.signIn=signIn;window.signUp=signUp;window.sendReset=sendReset;
-window.showSignin=showSignin;window.showSignup=showSignup;window.showForgot=showForgot;
-window.skipAuth=skipAuth;window.handleSignOut=handleSignOut;
+window.handleEmail=handleEmail;window.skipAuth=skipAuth;window.handleSignOut=handleSignOut;
+window.calNav=calNav;window.closeMilestoneModal=closeMilestoneModal;
 window.saveOnboardName=saveOnboardName;window.appendEmoji=appendEmoji;window.updateOnboardChar=updateOnboardChar;
 window.goTo=goTo;window.selectDrink=selectDrink;window.changeQty=changeQty;window.logDrink=logAllDrinks;window.logAllDrinks=logAllDrinks;window.basketAdj=basketAdj;window.renderBasket=renderBasket;
 window.closeModal=closeModal;window.openNameModal=openNameModal;window.closeNameModal=closeNameModal;
